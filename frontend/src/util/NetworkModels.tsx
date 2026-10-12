@@ -29,6 +29,17 @@ export interface ChartTableLevel {
     table_level: string;
 }
 
+export interface SieglindeCalculations {
+    elo_floor: number;
+    elo_base: number;
+    elo_per_level: number
+}
+
+export interface TierData {
+    tiers: Tier[];
+    sieg_calc: SieglindeCalculations;
+}
+
 export interface Tier {
     name: string;
     floor: number;
@@ -52,6 +63,7 @@ export interface JobResultMatchSubmit {
 
 export interface Chart {
     chart_id: string;
+    md5: string;
     title: string;
     artist: string;
     subtitle: string | null;
@@ -65,6 +77,7 @@ export interface Match {
     id: number;
     user: User;
     chart: Chart;
+    score: MatchScore | null;
     rating_change: number | null;
     ladder: string;
     game: string;
@@ -82,4 +95,14 @@ export interface Match {
     start_time: string;
     cutoff_time: string;
     end_time: string | null;
+    potential_gain: number;
+    potential_loss: number;
+}
+
+export interface MatchScore {
+    id: number;
+    lamp: string;
+    grade: string;
+    percent: number;
+    bp: number;
 }

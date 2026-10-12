@@ -1,104 +1,23 @@
-from datetime import datetime, timezone, timedelta
-from enum import StrEnum
-from app.models.matches import MatchStatus, MatchResult
-from app.models import ChartRating
-from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert
+from datetime import datetime, timezone
+from sqlalchemy import update
+from sqlalchemy.orm import Session
 
 from app.models import User, Match
-from app.tachi import tachi_get
-from app.ratings import sieg_to_elo, GlickoRating, update
-from app.db import Session
-from app.models import PlayerRating
+from app.core.enums import ClearTypes, MatchStatus
+from app.services.tachi import tachi_get
+from app.services.match import cancel_stale_matches
+from app.ratings import sieg_to_elo
+from app.logic.match import lamp_counts_as_win
+from app.services.match import resolve_match, get_best_score_for_match
 
 class JobError(Exception):
     pass
-
-DEFAULT_RATING = 850.0
-DEFAULT_RD = 300.0
-SEEDED_RD = 175.0
-DEFAULT_VOLATILITY = 0.06
-GRACE_PERIOD = timedelta(minutes=2)
-
-class ClearTypes(StrEnum):
-    NO_PLAY = "NO PLAY"
-    FAILED = "FAILED"
-    ASSIST_CLEAR = "ASSIST CLEAR"
-    EASY_CLEAR = "EASY CLEAR"
-    CLEAR = "CLEAR"
-    HARD_CLEAR = "HARD CLEAR"
-    EX_HARD_CLEAR = "EX HARD CLEAR"
-    FULL_COMBO = "FULL COMBO"
-
-LAMP_ORDER = [
-    ClearTypes.NO_PLAY,
-    ClearTypes.FAILED,
-    ClearTypes.ASSIST_CLEAR,
-    ClearTypes.EASY_CLEAR,
-    ClearTypes.CLEAR,
-    ClearTypes.HARD_CLEAR,
-    ClearTypes.EX_HARD_CLEAR,
-    ClearTypes.FULL_COMBO
-]
-
-LAMP_RANK = {lamp: i for i, lamp in enumerate(LAMP_ORDER)}
-
-LADDER_REQUIREMENT = {
-    "ec": ClearTypes.EASY_CLEAR,
-    "hc": ClearTypes.HARD_CLEAR
-}
-
-def resolve_match(db, match_id: int, score: dict | None) -> dict:
-    match = db.scalar(select(Match).where(Match.id == match_id).with_for_update())
-    if match is None or match.status != MatchStatus.ACTIVE:
-        return {"skipped": "already resolved"}
-
-    won = score is not None
-    player = get_player_rating(db, match.user_id, match.game, match.playtype, match.ladder)
-    chart = get_chart_rating(db, match.chart_id, match.ladder)
-
-    s = float(won)
-
-    player_old = GlickoRating(player.display_rating, player.rd, player.volatility)
-    chart_old = GlickoRating(chart.rating, chart.rd, chart.volatility)
-
-    player_new = update(player_old, chart_old, s)
-    chart_new = update(chart_old, player_old, 1 - s)
-
-    player.display_rating = player_new.rating
-    player.rating = player_new.rating
-    player.rd = player_new.rd
-    player.volatility = player_new.volatility
-    player.games_played += 1
-
-    chart.rating = chart_new.rating
-    chart.rd = chart_new.rd
-    chart.volatility = chart_new.volatility
-    chart.games_played += 1
-
-    if player.games_played >= 4:
-        player.placed = True
-
-    match.status = MatchStatus.RESOLVED
-    match.result = MatchResult.WIN if won else MatchResult.LOSS
-    match.end_time = datetime.now(timezone.utc)
-    #match.player_mmr_after = player.rating
-    #match.player.display_after = player.display_rating
-    #match.chart_rating_after = chart.rating
-    # score evidence fields maybe
-
-    db.commit()
-
-    return {"match_id": match.id, "result": match.result}
-
-def meets_requirement(lamp: str, ladder: str) -> bool:
-    return LAMP_RANK.get(lamp, -1) >= LAMP_RANK[LADDER_REQUIREMENT[ladder]]
 
 def in_match_window(score, match) -> bool:
     added = tachi_time(score["timeAdded"])
     achieved = tachi_time(score["timeAchieved"])
 
-    if added is None or not (match.start_time <= added <= match.cutoff_time + GRACE_PERIOD):
+    if added is None or not (match.start_time <= added <= match.cutoff_time):
         return False
     if achieved is not None and not (match.start_time <= achieved <= match.cutoff_time):
         return False
@@ -124,7 +43,6 @@ def save_seed_ratings(user, playtype: str, profile: dict) -> dict:
     if value is not None:
         seeds[f"bms:{playtype}:ec"] = { "elo": sieg_to_elo(value), "numScores": scores }
         seeds[f"bms:{playtype}:hc"] = { "elo": sieg_to_elo(value), "numScores": scores }
-        print(seeds)
     else:
         seeds[f"bms:{playtype}:ec"] = None
         seeds[f"bms:{playtype}:hc"] = None
@@ -132,62 +50,6 @@ def save_seed_ratings(user, playtype: str, profile: dict) -> dict:
     user.rating_seeds = {**user.rating_seeds, **seeds}
 
     return seeds
-
-def get_player_rating(db: Session, user_id: int, game: str, playtype: str, ladder: str) -> PlayerRating | None:
-    return db.scalar(
-        select(PlayerRating).where(
-            PlayerRating.user_id == user_id,
-            PlayerRating.game == game,
-            PlayerRating.playtype == playtype,
-            PlayerRating.ladder == ladder,
-        )
-    )
-
-def get_chart_rating(db: Session, chart_id: str, ladder: str) -> ChartRating:
-    return db.scalar(
-        select(ChartRating).where(
-            ChartRating.chart_id == chart_id,
-            ChartRating.ladder == ladder,
-        )
-    )
-
-def get_or_create_player_rating(
-        db: Session,
-        user_id: int,
-        ladder: str,
-        game: str = "bms",
-        playtype: str = "bms",
-        seed_rating: float | None = None,
-        seed_rd: float | None = None
-) -> PlayerRating:
-    existing = get_player_rating(db, user_id, game, playtype, ladder)
-
-    if existing is not None:
-        return existing
-
-    rating = seed_rating if seed_rating is not None else DEFAULT_RATING
-    rd = seed_rd if seed_rd is not None else DEFAULT_RD
-
-    db.execute(
-        insert(PlayerRating)
-        .values(
-            user_id=user_id,
-            game=game,
-            playtype=playtype,
-            ladder=ladder,
-            rating=rating,
-            rd=rd,
-            volatility=DEFAULT_VOLATILITY,
-            display_rating=rating,
-            placed=False,
-            games_played=0
-        )
-        .on_conflict_do_nothing(
-            index_elements=["user_id", "game", "playtype", "ladder"]
-        )
-    )
-
-    return get_player_rating(db, user_id, game, playtype, ladder)
 
 def tachi_recent_score(db, job):
     user = db.get(User, job.user_id)
@@ -228,43 +90,54 @@ def match_end_check(db, job):
     match = db.get(Match, job.payload.get("matchId"))
     user = db.get(User, job.user_id)
 
-    scores_call = tachi_get(f"/users/me/games/bms-{match.playtype}/scores/recent", user.tachi_api_key)
+    best_score = get_best_score_for_match(user, match)
 
-    recent_scores = scores_call["scores"]
+    if best_score is not None:
+        won = lamp_counts_as_win(ClearTypes(best_score["scoreData"]["lamp"]), match.ladder)
+    else:
+        won = False
 
-    scores_in_window = [score for score in recent_scores if in_match_window(score, match)]
-
-    scores_on_chart = [s for s in scores_in_window if s["chartID"] == match.chart_id]
-
-    clears = [s for s in scores_on_chart if meets_requirement(s["scoreData"]["lamp"], match.ladder)]
-
-    best_lamp = max(clears, key=lambda s: LAMP_RANK[s["scoreData"]["lamp"]]) if clears else None
-    return resolve_match(db, match.id, best_lamp)
+    return resolve_match(db, match.id, won, best_score)
 
 def match_pre_submission(db, job):
     match = db.get(Match, job.payload.get("matchId"))
     user = db.get(User, job.user_id)
+    print("TEST")
+    best_score = get_best_score_for_match(user, match)
 
-    scores_call = tachi_get(f"/users/me/games/bms-{match.playtype}/scores/recent", user.tachi_api_key)
+    print(best_score)
 
-    recent_scores = scores_call["scores"]
+    if best_score is None:
+        return {"match_id": match.id, "result": match.result}
 
-    scores_in_window = [score for score in recent_scores if in_match_window(score, match)]
+    won = lamp_counts_as_win(ClearTypes(best_score["scoreData"]["lamp"]), match.ladder)
 
-    scores_on_chart = [s for s in scores_in_window if s["chartID"] == match.chart_id]
+    print(won)
 
-    clears = [s for s in scores_on_chart if meets_requirement(s["scoreData"]["lamp"], match.ladder)]
-
-    if len(clears) > 0:
-        best_lamp = max(clears, key=lambda s: LAMP_RANK[s["scoreData"]["lamp"]]) if clears else None
-        return resolve_match(db, match.id, best_lamp)
-
+    if won:
+        return resolve_match(db, match.id, won, best_score)
     return {"match_id": match.id, "result": match.result}
+
+def match_forfeit(db, job):
+    match: Match = db.get(Match, job.payload.get("matchId"))
+    user: User = db.get(User, job.user_id)
+
+    best_score = get_best_score_for_match(user, match)
+    won = False
+
+    return resolve_match(db, match.id, won, best_score)
+
+def match_cleanup(db, job):
+    rowCount = cancel_stale_matches(db)
+
+    return {"rowsAffected": rowCount}
 
 HANDLERS = {
     "tachi_recent_score": tachi_recent_score,
     "tachi_rating": tachi_rating,
     "tachi_seed_profile": tachi_seed_profile,
     "match_end_check": match_end_check,
-    "match_pre_submission": match_pre_submission
+    "match_pre_submission": match_pre_submission,
+    "match_forfeit": match_forfeit,
+    "match_cleanup": match_cleanup
 }
