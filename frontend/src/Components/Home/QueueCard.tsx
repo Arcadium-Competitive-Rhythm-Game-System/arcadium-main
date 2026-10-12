@@ -113,7 +113,7 @@ export default function QueueCard(props: QueueCardProps) {
         <></>
     ) : (
         <>
-            <div className="w-1/4 bg-background-dark p-5 rounded-md flex flex-col">
+            <div className="w-full lg:w-1/4 bg-background-dark p-5 rounded-md flex flex-col">
                 <p className="uppercase font-archivo text-center font-light text-2xl tracking-widest mb-8">
                     {props.rating.ladder == "ec" ? "BMS Easy Clear Ladder" : "BMS Hard Clear Ladder"}
                 </p>

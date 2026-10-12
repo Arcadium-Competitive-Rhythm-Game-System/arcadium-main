@@ -113,7 +113,7 @@ export default function QueueDashboard() {
 
     return loading ? (
         <></> ) : (
-        <div className="flex items-center gap-5 justify-center w-full bg-foreground p-5">
+        <div className="flex flex-col lg:flex-row items-center gap-5 justify-center w-full bg-foreground p-5">
             {
                 canQueue.can_queue ? displayQueueCards() : (displayTachiKeyInsert())
             }
