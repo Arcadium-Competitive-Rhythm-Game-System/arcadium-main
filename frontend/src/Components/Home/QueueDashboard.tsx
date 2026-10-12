@@ -95,7 +95,7 @@ export default function QueueDashboard() {
     const displayTachiKeyInsert = () => {
 
         return (
-            <Fieldset className="space-y-8 w-1/4 flex flex-row items-center gap-3">
+            <Fieldset className="space-y-8 lg:w-1/4 w-full flex flex-row items-center gap-3">
                 <Field className="flex-1">
                     <Label className="block font-bold">Tachi API Key</Label>
                     <Input 
@@ -113,7 +113,7 @@ export default function QueueDashboard() {
 
     return loading ? (
         <></> ) : (
-        <div className="flex items-center gap-5 justify-center w-full bg-foreground p-5">
+        <div className="flex flex-col lg:flex-row items-center gap-5 justify-center w-full bg-foreground p-5">
             {
                 canQueue.can_queue ? displayQueueCards() : (displayTachiKeyInsert())
             }

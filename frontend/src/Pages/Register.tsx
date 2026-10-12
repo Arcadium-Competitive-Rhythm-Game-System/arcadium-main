@@ -54,7 +54,7 @@ export default function Register() {
 
     return (
         <div className="min-h-screen flex items-center justify-center">
-            <form className="w-1/4">
+            <form className="lg:w-1/4 w-5/6">
                 <Fieldset className="space-y-8">
                     <Legend className="text-4xl font-bold">Register</Legend>
 
@@ -131,7 +131,7 @@ export default function Register() {
                         <div>
                             <p>Already have an account? <Link className="text-highlight hover:text-purple-400 duration-200" to="/login">Log in!</Link></p>
                         </div>
-                        <Button type="submit" onClick={(e) => { e.preventDefault(); handleRegister() }} className="bg-zinc-600 p-4 rounded-md hover:bg-zinc-500 duration-200 cursor-pointer w-1/6 font-bold">Register</Button>
+                        <Button type="submit" onClick={(e) => { e.preventDefault(); handleRegister() }} className="bg-zinc-600 p-4 rounded-md hover:bg-zinc-500 duration-200 cursor-pointer font-bold">Register</Button>
                     </Field>
                 </Fieldset>
             </form>

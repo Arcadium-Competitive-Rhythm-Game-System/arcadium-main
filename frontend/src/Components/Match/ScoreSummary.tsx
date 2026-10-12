@@ -30,17 +30,17 @@ export default function ScoreSummary({ match }: ScoreSummaryProps) {
         return (<>Loading Score</>)
 
     return (
-        <div className="flex flex-row p-3">
+        <div className="flex flex-col lg:flex-row items-center gap-3 lg:gap-0 p-3">
             {/* <div>
                 <p className="font-archivo tracking-widest font-bold text-2xl">{match.score?.lamp} | {match.score?.grade} | <span className="font-mono tracking-[0.2em]">{match.score?.percent.toFixed(2)}%</span> | {match.score?.bp} BP</p>
             </div> */}
 
             <div className={cn(
-                "flex items-center mr-5 px-4 py-2 rounded-md border font-archivo font-extrabold tracking-[0.15em] text-sm",
+                "w-full lg:w-auto flex items-center justify-center lg:justify-start lg:mr-5 px-4 py-2 rounded-md border font-archivo font-extrabold tracking-[0.15em] text-sm",
                 LAMP_STYLES[match.score.lamp]
             )}>{match.score.lamp}</div>
 
-            <div className="w-px self-stretch bg-zinc-600 mr-5" />
+            <div className="hidden lg:block w-px self-stretch bg-zinc-600 mr-5" />
 
             <div className="flex gap-10">
                 <Stat label={"GRADE"} value={match.score.grade} />

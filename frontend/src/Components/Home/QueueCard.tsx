@@ -68,6 +68,8 @@ export function QueueIcon(props: QueueIconProps) {
                     <ProgressBar
                     value={props.progress?.percent ?? 0}
                     className="bg-highlight w-full" 
+                    durationMs={0}
+                    animate={false}
                     />
                     <div className="font-sanchez flex flex-row justify-between text-subtext mt-2 text-sm">
                         <p>{divisionProgress(props.tiers, props.rating, props.tierIndex ?? 0)?.start}</p>
@@ -113,7 +115,7 @@ export default function QueueCard(props: QueueCardProps) {
         <></>
     ) : (
         <>
-            <div className="w-1/4 bg-background-dark p-5 rounded-md flex flex-col">
+            <div className="w-full lg:w-1/4 bg-background-dark p-5 rounded-md flex flex-col">
                 <p className="uppercase font-archivo text-center font-light text-2xl tracking-widest mb-8">
                     {props.rating.ladder == "ec" ? "BMS Easy Clear Ladder" : "BMS Hard Clear Ladder"}
                 </p>

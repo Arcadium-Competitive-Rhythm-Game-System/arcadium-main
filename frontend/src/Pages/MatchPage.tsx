@@ -180,42 +180,51 @@ export default function MatchPage() {
 
             <div className="flex-1 flex flex-col">
                 <div className="w-full mx-auto flex-1 flex flex-col items-center justify-center">
-                    <div className="w-1/2 flex flex-row justify-between mb-8">
+                    <div className="w-full lg:w-1/2 flex flex-col lg:flex-row items-center lg:justify-between mb-8 mt-5 lg:mt-0">
                         <div>
-                            <p className="font-archivo tracking-[0.2em] text-subtext text-sm mb-3">{games[match.game]} {playtype[match.playtype]} &middot; {ladder[match.ladder].toUpperCase()} &middot; <span className="text-highlight">{match.type.toUpperCase()}</span></p>
-                            <h1 className="font-archivo text-5xl tracking-widest font-thin">Match #{id}</h1>
+                            <div className="justify-center lg:justify-start flex flex-wrap items-center gap-x-2 gap-y-1 font-archivo text-xs tracking-[0.2em] text-subtext mb-5 lg:mb-1">
+                                <span>BMS 7K</span>
+                                <span>·</span>
+                                <span>EASY CLEAR</span>
+                                <span className="">·</span>
+                                <span className="text-purple-400">COMPETITIVE</span>
+                                </div>
+                            <h1 className="text-center lg:text-left font-archivo text-5xl tracking-widest font-thin">Match #{id}</h1>
                         </div>
-                        {
-                            match.status == "active" ?
-                            <div>
-                                <h1 className="font-mono text-5xl tracking-widest font-bold mb-3 text-right">{msLeft === 0 ? "Ended" : formatTime(msLeft)}</h1>
-                                {
-                                    <p className="font-sanchez text-subtext text-right tracking-[0.2em]">{msLeft === 0 ? "Ended" : "Cutoff Time - " + formatClock(match.cutoff_time)}</p>
-                                }
+                        <div className="mt-5 lg:mt-0">
+                            {
+                                match.status == "active" ?
+                                <div>
+                                    <h1 className="font-mono text-center text-5xl tracking-widest font-bold mb-3 lg:text-right">{msLeft === 0 ? "Ended" : formatTime(msLeft)}</h1>
+                                    {
+                                        <p className="text-center font-sanchez text-subtext lg:text-right tracking-[0.2em]">{msLeft === 0 ? "Ended" : "Cutoff Time - " + formatClock(match.cutoff_time)}</p>
+                                    }
 
-                            </div> :
-                            <div>
-                                {
-                                    match.result == "win" ? <h1 className="font-archivo text-green-500 text-5xl tracking-widest font-bold mb-3 text-right">WIN</h1> : 
-                                    <h1 className="font-archivo text-red-500 text-5xl tracking-widest font-bold mb-3 text-right">LOSE</h1>
-                                }
+                                </div> :
+                                <div>
+                                    {
+                                        match.result == "win" ? <h1 className="font-archivo text-green-500 text-5xl tracking-widest font-bold mb-3 text-right">WIN</h1> : 
+                                        <h1 className="font-archivo text-red-500 text-5xl tracking-widest font-bold mb-3 text-right">LOSE</h1>
+                                    }
 
-                                {
-                                    <p className="font-sanchez text-subtext text-right tracking-[0.2em]">{msLeft === 0 ? "Ended" : "Cutoff Time - " + formatClock(match.cutoff_time)}</p>
-                                }
-                            </div>
-                        }
+                                    {
+                                        <p className="text-center font-sanchez text-subtext lg:text-right tracking-[0.2em]">{msLeft === 0 ? "Ended" : "Cutoff Time - " + formatClock(match.cutoff_time)}</p>
+                                    }
+                                </div>
+                            }
+                        </div>
+
 
                     </div>
-                    <div className="w-1/2 mb-8">
+                    <div className="lg:w-1/2 w-5/6 mb-8">
                         <ProgressBar
                         value={calculateTimeLeftPercentage(match.start_time, match.cutoff_time, msLeft)}
                         animate={true}
                         durationMs={700}
                         />
                     </div>
-                    <div className="w-1/2 grid grid-cols-3 gap-10 mx-auto">
-                        <ForegroundCard className="text-center">
+                    <div className="w-5/6 lg:w-1/2 grid-cols-1 grid lg:grid-cols-3 gap-6 lg:gap-10 mx-auto">
+                        <ForegroundCard className="order-3 lg:order-0 text-center">
                             <p className="font-archivo font-thin tracking-[0.2em] text-subtext">YOU</p>
                             <QueueIcon
                                 tierIndex={tierIndex}
@@ -227,7 +236,7 @@ export default function MatchPage() {
                                 displayRating={true}
                             />
                         </ForegroundCard>
-                        <ForegroundCard className="text-center">
+                        <ForegroundCard className="order-1 lg:order-0 text-center">
                             <p className="font-archivo font-thin tracking-[0.2em] text-subtext">POTENTIAL</p>   
                             <div className="flex-1 flex flex-col items-center justify-center gap-2">
                                 <div className="grid grid-cols-2 divide-x divide-zinc-700/60">
@@ -243,7 +252,7 @@ export default function MatchPage() {
 
                             </div>        
                         </ForegroundCard>
-                        <ForegroundCard className="text-center w-full">
+                        <ForegroundCard className="order-2 lg:order-0 text-center w-full">
                             <p className="font-archivo font-thin tracking-[0.2em] text-subtext">OPPONENT</p>
                             <QueueIcon
                                 tierIndex={chartTierIndex}
@@ -275,10 +284,10 @@ export default function MatchPage() {
                             </div>
                         </ForegroundCard>
                     </div>
-                    <div className="w-1/2 mt-5">
+                    <div className="w-5/6 lg:w-1/2 mt-5">
                         <ForegroundCard>
-                            <div className="flex flex-row justify-between items-center">
-                                <div className="flex flex-row items-center gap-5">
+                            <div className="flex flex-col lg:flex-row justify-center items-center">
+                                <div className="w-full lg:w-3/4 flex flex-row items-center gap-5">
                                 {
                                     match.score == null ? 
                                     
@@ -293,14 +302,14 @@ export default function MatchPage() {
                                         </div>
                                     </div> 
                                     </> : 
-                                    <>
+                                    <div className="w-full">
                                         <ScoreSummary match={match} />
-                                    </>
+                                    </div>
 
                                 }
                                 </div>
 
-                                <div className="flex flex-row gap-4">
+                                <div className="w-5/6 lg:w-auto mt-3 lg:mt-auto flex flex-col lg:flex-row gap-4">
                                     {
                                         match.status == "active" && match.user.id == user.id ? (
                                         skipMsLeft > 0 ? <Button onClick={handleSkip} className="font-sanchez bg-foreground border border-zinc-600/80 rounded-lg p-3 font-bold hover:brightness-130 cursor-pointer duration-150">Skip &middot; <span className="text-subtext text-sm">{Math.ceil(skipMsLeft / 1000) + "s left"}</span></Button> :
@@ -322,22 +331,22 @@ export default function MatchPage() {
                             </div>
                         </ForegroundCard>
                     </div>
-                    <div className="w-1/2 mt-5">
+                    <div className="w-5/6 lg:w-1/2 mt-5">
                     {
                         match.status == "active" && match.user.id == user.id ? (
-                        <ForegroundCard className="border-2 border-dotted border-zinc-500/50 flex-row items-center gap-5">
+                        <ForegroundCard className="border-2 border-dotted border-zinc-500/50 flex-col lg:flex-row items-center gap-5">
                             <p className="font-sanchez font-bold shrink-0">
                                 Load it in game!
                             </p>
                             <p className="font-sanchez text-subtext text-[13px] flex-1 leading-7">
                                 Press <span className="bg-background p-1 border m-1">F2</span> on your table in Beatoraja or press <span className="bg-background p-1 border m-1">F8</span> in openLR2 to reload your match table!
                             </p>
-                            <p className="font-mono bg-background p-2 border border-zinc-500 text-subtext shrink-0">
+                            <p className="font-mono bg-background p-2 border border-zinc-500 text-subtext shrink-0 text-xs lg:text-md">
                                 https://arcadium.com/api/match/{match.user.id}/table
                             </p>
                             <div className="flex flex-row gap-4">
                                 <Menu>
-                                    <MenuButton className="text-highlight cursor-pointer underline tracking-wide flex flex-row items-center gap-1">
+                                    <MenuButton className="text-highlight hidden cursor-pointer underline tracking-wide lg:flex flex-row items-center gap-1">
                                         Download Chart <ChevronDown className='size-4' />
                                     </MenuButton>
                                     <MenuItems
