@@ -68,6 +68,8 @@ export function QueueIcon(props: QueueIconProps) {
                     <ProgressBar
                     value={props.progress?.percent ?? 0}
                     className="bg-highlight w-full" 
+                    durationMs={0}
+                    animate={false}
                     />
                     <div className="font-sanchez flex flex-row justify-between text-subtext mt-2 text-sm">
                         <p>{divisionProgress(props.tiers, props.rating, props.tierIndex ?? 0)?.start}</p>

@@ -51,7 +51,7 @@ export default function MatchPrep() {
     }
 
     return (
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center w-5/6 mx-auto lg:w-full">
             {
                 rating.length == 0 ? ( <QueueCard rating={unrankedUserRating} tiers={tiers} /> ) : (<QueueCard rating={rating[0].placed ? rating[0] : unrankedUserRating} displayProgress={rating[0].placed ? true : false} tiers={tiers}/>)
             }
