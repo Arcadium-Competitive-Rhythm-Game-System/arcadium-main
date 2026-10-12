@@ -3,7 +3,7 @@ import { cn } from "../../util/helpers";
 type ProgressBarProps = {
   value: number;   // 0–100
   className?: string;
-  onTransitionEnd: () => void;
+  onTransitionEnd?: () => void;
   animate: boolean;
   durationMs: number
 };
