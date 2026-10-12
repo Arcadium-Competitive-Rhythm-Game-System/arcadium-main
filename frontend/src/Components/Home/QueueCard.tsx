@@ -3,77 +3,74 @@ import { useAuth } from "../../hooks/useAuth";
 import { Button } from "@headlessui/react";
 import { CircleArrowOutUpRight, Podium } from "lucide-react";
 import ProgressBar from "../General/ProgressBar";
-import { type SieglindeCalculations, type Match, type Tier, type TierData, type UserRating } from "../../util/NetworkModels";
-import { api, calculateDivision, determineTier, divisionProgress, eloToSieg, toFixedTruncated, toRoman, winRate } from "../../util/helpers";
+import type { Match, Tier, UserRating } from "../../util/NetworkModels";
+import { api, toFixedTruncated, toRoman, winRate } from "../../util/helpers";
 import { returnIcon } from "../../util/rankedIconPicker";
 import { useNavigate } from "react-router";
-import { useEffect, useState } from "react";
+import { useRank } from "../../hooks/useTiers";
 
 interface QueueCardProps {
     rating: UserRating;
+    placed?: boolean;
     tiers: Tier[],
     displayProgress?: boolean;
     displayRating?: boolean;
 }
 
 interface QueueIconProps {
-    tierIndex: number | null;
-    division: number | null;
-    progress?: any | null;
-    tiers: Tier[];
     rating: number;
+    placed?: boolean;
     displayProgress?: boolean;
     displayRating?: boolean
 }
 
 export function QueueIcon(props: QueueIconProps) {
 
-    const [sieglindeCalculations, setSieglindeCalculations] = useState<SieglindeCalculations>()
+    const rank = useRank(props.rating, props.placed);
 
-    useEffect(() => {
-        api<TierData>("/info/tiers")
-        .then((tiers) => {
-            setSieglindeCalculations(tiers.sieg_calc)
-        })
-    }, [])
+    if (!rank)
+        return (
+        <div>Loading...</div>
+    )
+
 
     return (
     <div className="flex items-center h-ful flex-col gap-4">
         <div className="h-32 flex items-end justify-center">
             {
-                props.tierIndex !== null ?
-                <img className="h-28 w-auto" src={returnIcon(props.tiers[props.tierIndex].name)}/> :
+                rank.ranked ?
+                <img className="h-28 w-auto" src={returnIcon(rank.tier.name)}/> :
                 <img className="h-28 w-auto" src={returnIcon("Unranked")}/>
             }
 
         </div>
         <div className="font-archivo items-center font-light text-xl tracking-widest">
             {
-            props.tierIndex !== null 
-            ? `${props.tiers[props.tierIndex].name} ${props.division ? toRoman(props.division) : ""}`
+             rank.ranked 
+            ? `${rank.tier.name} ${rank.progress?.division ? toRoman(rank.progress.division) : ""}`
             : "Unranked"
             }
         </div>
         {
-            props.displayRating ? (
+            props.displayRating && rank.ranked ? (
             <div className="font-mono text-xl font-extrabold flex items-center gap-3">
-                {toFixedTruncated(props.rating, 0)} <span className="text-subtext font-light text-[15px]">≈ {sieglindeCalculations ? eloToSieg(props.rating, sieglindeCalculations) >= 13 ? "★" : "☆" : "☆"} {sieglindeCalculations ? eloToSieg(props.rating, sieglindeCalculations).toFixed(2) : "0.00"}</span>
+                {toFixedTruncated(props.rating, 0)} <span className="text-subtext font-light text-[15px]">≈ {rank.siegRating.symbol} {rank.siegRating.level.toFixed(2)}</span>
             </div>
             ): (<></>)
         }
         
             {
-                props.displayProgress ?
+                props.displayProgress && rank.ranked ?
                 <div className="w-3/4">
                     <ProgressBar
-                    value={props.progress?.percent ?? 0}
+                    value={rank.progress?.percent ?? 0}
                     className="bg-highlight w-full" 
                     durationMs={0}
                     animate={false}
                     />
                     <div className="font-sanchez flex flex-row justify-between text-subtext mt-2 text-sm">
-                        <p>{divisionProgress(props.tiers, props.rating, props.tierIndex ?? 0)?.start}</p>
-                        <p>Gold II &middot; 1660</p>
+                        <p>{rank.progress?.start}</p>
+                        <p>{rank.next?.label} &middot; {rank.next?.at}</p>
                     </div> 
                     </div>
                     : (<></>)
@@ -87,14 +84,6 @@ export function QueueIcon(props: QueueIconProps) {
 export default function QueueCard(props: QueueCardProps) {
     const { user, loading } = useAuth();
     const navigate = useNavigate();
-
-    console.log(props.rating.placed)
-
-    console.log(props.tiers)
-
-    const tierIndex: number | null = determineTier(props.tiers, props.rating.display_rating)
-    const division: number | null = calculateDivision(props.tiers, props.rating.display_rating, tierIndex ?? -1);
-    const progress: any | null = divisionProgress(props.tiers, props.rating.display_rating, tierIndex ?? -1);
 
     const MatchType = {
         COMPETITIVE: "competitive",
@@ -122,11 +111,8 @@ export default function QueueCard(props: QueueCardProps) {
 
                 <div className="flex flex-row justify-center items-center">
                     <QueueIcon 
-                    tierIndex={tierIndex}
-                    division={division}
-                    progress={progress}
                     rating={props.rating.display_rating}
-                    tiers={props.tiers}
+                    placed={props.placed}
                     displayProgress={props.displayProgress}
                     displayRating={props.displayRating}
                     />

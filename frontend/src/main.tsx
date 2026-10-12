@@ -15,6 +15,7 @@ import RequireAuth from './Components/General/RequireAuth.tsx'
 import Register from './Pages/Register.tsx'
 import MatchPrep from './Pages/MatchPrep.tsx'
 import MatchPage from './Pages/MatchPage.tsx'
+import { TierProvider } from './hooks/useTiers.tsx'
 
 const router = createBrowserRouter([
   {
@@ -42,8 +43,11 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <RouterProvider router={router}/>
-    </AuthProvider>
+    <TierProvider>
+      <AuthProvider>
+        <RouterProvider router={router}/>
+      </AuthProvider>
+    </TierProvider>
+
   </StrictMode>,
 )

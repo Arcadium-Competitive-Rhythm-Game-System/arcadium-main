@@ -39,8 +39,8 @@ export default function Layout() {
             <Disclosure key={location.pathname} as="nav" className="font-sanchez bg-background-dark lg:hidden font-bold tracking-wider p-7 border-b border-highlight items-center">
                 <div className="flex flex-row gap-20 items-center p-4">
                     <Link to="/" className="mr-auto flex flex-row items-center gap-2">
-                            <img src={arcadiumIconLogo} alt="Arcadium Icon" className="h-10"/>
-                            <img src={arcadiumTextLogo} alt="Arcadium Text" className="h-11" />
+                            <img src={arcadiumIconLogo} alt="Arcadium Icon" className="h-15"/>
+                            <img src={arcadiumTextLogo} alt="Arcadium Text" className="h-16" />
                     </Link>
 
                     <DisclosureButton className="group p-2">

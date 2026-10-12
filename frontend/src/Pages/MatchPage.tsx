@@ -1,16 +1,15 @@
-import { Link, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { useAuth } from "../hooks/useAuth"
 import { useEffect, useState } from "react";
-import { api, buildSteps, calculateDivision, calculateTimeLeftPercentage, determineTier, divisionProgress, formatClock, waitForJob, waitForMatch } from "../util/helpers";
-import { type Job, type ChartRating, type JobResultMatchSubmit, type Match, type MatchSubmit, type Tier, type UserRating, type TierData, type SieglindeCalculations } from "../util/NetworkModels";
+import { api, calculateTimeLeftPercentage, formatClock, waitForJob, waitForMatch } from "../util/helpers";
+import type { Job, JobResultMatchSubmit, Match, MatchSubmit } from "../util/NetworkModels";
 import { QueueIcon } from "../Components/Home/QueueCard";
 import { formatTime, useCountdown } from "../hooks/useCountdown";
 import { Button, MenuButton, Menu, MenuItems, MenuItem } from "@headlessui/react";
-import { ChevronDown, LoaderCircle, LogOut, Send } from "lucide-react";
+import { ChevronDown, LoaderCircle } from "lucide-react";
 import { MatchResultsDialog } from "../Components/Match/MatchResultsDialog";
 import ForegroundCard from "../Components/General/ForegroundCard";
 import ProgressBar from "../Components/General/ProgressBar";
-import { games, ladder, playtype } from "../util/dictionaryCorrections";
 import { toFixedTruncated } from "../util/helpers";
 import ScoreSummary from "../Components/Match/ScoreSummary";
 
@@ -29,18 +28,15 @@ export default function MatchPage() {
     const [matchResult, setMatchResult] = useState<string>("lose");
 
     const [match, setMatch] = useState<Match | null>();
-    const [tiers, setTiers] = useState<Tier[]>([]);
 
-    const { msLeft, finished, skipFinished, skipMsLeft } = useCountdown(match?.cutoff_time, match?.start_time)
+    const { msLeft, finished, skipMsLeft } = useCountdown(match?.cutoff_time, match?.start_time)
 
     useEffect(() => {
         Promise.all([
-            api<Match>(`/match/${id}`),
-            api<TierData>("/info/tiers")
+            api<Match>(`/match/${id}`)
         ])
-        .then(([match, tiers]) => {
+        .then(([match]) => {
             setMatch(match)
-            setTiers(tiers.tiers)
         })
     }, [user?.id, id])
 
@@ -65,35 +61,9 @@ export default function MatchPage() {
         runMatchCheck()
     }, [finished, match?.status, match?.id])
 
-    const playerRating : UserRating = { 
-        ladder:  match?.ladder ?? "ec",
-        display_rating: match?.player_placed_before ? match.player_display_before : -1,
-        placed: match?.player_placed_before ?? false,
-        games_played: -1,
-        rank: -1,
-        total: -1,
-        wins: -1,
-        losses: -1
-    }
-
-    const chartRating : ChartRating = {
-        ladder: match?.ladder ?? "ec",
-        rating: match?.chart_rating_before ?? -1,
-        rd: -1,
-        games_played: -1,
-        wins: -1
-    }
-
-    if (loading || !match || tiers.length === 0 || user == null) {
+    if (loading || !match  || user == null) {
         return <div className="flex-1 flex items-center justify-center text-muted">Loading…</div>
     }
-
-    const tierIndex: number | null = determineTier(tiers, playerRating.display_rating)
-    const division: number | null = calculateDivision(tiers, playerRating.display_rating, tierIndex ?? -1);
-    const progress: any | null = divisionProgress(tiers, playerRating.display_rating, tierIndex ?? -1);
-
-    const chartTierIndex: number | null = determineTier(tiers, chartRating.rating)
-    const chartDivision: number | null = calculateDivision(tiers, chartRating.rating, chartTierIndex ?? -1);
 
     const handleSubmit = async () => {
         setStatus("submitting")
@@ -156,8 +126,6 @@ export default function MatchPage() {
         .catch(err => console.log(err))
     }
 
-    console.log(match.player_display_after)
-
     return (
         <div className="w-full flex-1 flex flex-col">
             {
@@ -171,16 +139,13 @@ export default function MatchPage() {
                 }}
                 rating_after={match.player_display_after}
                 rating_before={match.player_display_before}
-                tierIndex={tierIndex}
-                division={division}
-                tiers={tiers}
                 /> : <></>
             }
 
 
             <div className="flex-1 flex flex-col">
                 <div className="w-full mx-auto flex-1 flex flex-col items-center justify-center">
-                    <div className="w-full lg:w-1/2 flex flex-col lg:flex-row items-center lg:justify-between mb-8 mt-5 lg:mt-0">
+                    <div className="w-full lg:w-5/6 xl:w-1/2 flex flex-col lg:flex-row items-center lg:justify-between mb-8 mt-5 lg:mt-0">
                         <div>
                             <div className="justify-center lg:justify-start flex flex-wrap items-center gap-x-2 gap-y-1 font-archivo text-xs tracking-[0.2em] text-subtext mb-5 lg:mb-1">
                                 <span>BMS 7K</span>
@@ -216,22 +181,18 @@ export default function MatchPage() {
 
 
                     </div>
-                    <div className="lg:w-1/2 w-5/6 mb-8">
+                    <div className="xl:w-1/2 w-5/6 mb-8">
                         <ProgressBar
                         value={calculateTimeLeftPercentage(match.start_time, match.cutoff_time, msLeft)}
                         animate={true}
                         durationMs={700}
                         />
                     </div>
-                    <div className="w-5/6 lg:w-1/2 grid-cols-1 grid lg:grid-cols-3 gap-6 lg:gap-10 mx-auto">
+                    <div className="w-5/6 xl:w-1/2 grid-cols-1 grid lg:grid-cols-3 gap-6 lg:gap-10 mx-auto">
                         <ForegroundCard className="order-3 lg:order-0 text-center">
                             <p className="font-archivo font-thin tracking-[0.2em] text-subtext">YOU</p>
                             <QueueIcon
-                                tierIndex={tierIndex}
-                                division={division}
-                                progress={progress}
                                 rating={match.player_display_before}
-                                tiers={tiers}
                                 displayProgress={true}
                                 displayRating={true}
                             />
@@ -255,11 +216,7 @@ export default function MatchPage() {
                         <ForegroundCard className="order-2 lg:order-0 text-center w-full">
                             <p className="font-archivo font-thin tracking-[0.2em] text-subtext">OPPONENT</p>
                             <QueueIcon
-                                tierIndex={chartTierIndex}
-                                division={chartDivision}
-                                progress={progress}
                                 rating={match.chart_rating_before}
-                                tiers={tiers}
                                 displayProgress={false}
                                 displayRating={true}
                             />
@@ -278,16 +235,16 @@ export default function MatchPage() {
                             <div className="flex flex-row w-full justify-center gap-3 mt-3">
                                 {
                                     match.chart.table_levels.map((level) => (
-                                        <p className="font-semibold bg-background px-2 py-1 rounded-xl border border-zinc-600">{level.table_icon}{level.table_level}</p>
+                                        <p key={`${level.table_icon}${level.table_level}`} className="font-semibold bg-background px-2 py-1 rounded-xl border border-zinc-600">{level.table_icon}{level.table_level}</p>
                                     ))
                                 }
                             </div>
                         </ForegroundCard>
                     </div>
-                    <div className="w-5/6 lg:w-1/2 mt-5">
+                    <div className="w-5/6 xl:w-1/2 mt-5">
                         <ForegroundCard>
                             <div className="flex flex-col lg:flex-row justify-center items-center">
-                                <div className="w-full lg:w-3/4 flex flex-row items-center gap-5">
+                                <div className="w-full flex flex-row items-center gap-5">
                                 {
                                     match.score == null ? 
                                     

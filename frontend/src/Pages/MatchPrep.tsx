@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
-import QueueCard from "../Components/Home/QueueCard";
+import QueueCard, { QueueIcon } from "../Components/Home/QueueCard";
 import type { CanQueue, Tier, TierData, UserRating } from "../util/NetworkModels";
 import { api } from "../util/helpers";
 import { useParams } from "react-router";
@@ -27,7 +27,6 @@ export default function MatchPrep() {
             setRating(rating);
             setTiers(tiers.tiers);
             setCanQueue(canQueue)
-            console.log(tiers);
         })
         .catch(err => {
             console.log(err.message)
@@ -52,9 +51,9 @@ export default function MatchPrep() {
 
     return (
         <div className="flex-1 flex items-center justify-center w-5/6 mx-auto lg:w-full">
-            {
-                rating.length == 0 ? ( <QueueCard rating={unrankedUserRating} tiers={tiers} /> ) : (<QueueCard rating={rating[0].placed ? rating[0] : unrankedUserRating} displayProgress={rating[0].placed ? true : false} tiers={tiers}/>)
-            }
+            <QueueIcon
+            
+            />
         </div>
     )
 }
