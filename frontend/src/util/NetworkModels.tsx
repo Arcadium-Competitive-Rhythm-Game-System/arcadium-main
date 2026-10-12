@@ -77,6 +77,7 @@ export interface Match {
     id: number;
     user: User;
     chart: Chart;
+    score: MatchScore | null;
     rating_change: number | null;
     ladder: string;
     game: string;
@@ -96,4 +97,12 @@ export interface Match {
     end_time: string | null;
     potential_gain: number;
     potential_loss: number;
+}
+
+export interface MatchScore {
+    id: number;
+    lamp: string;
+    grade: string;
+    percent: number;
+    bp: number;
 }

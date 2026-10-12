@@ -1,5 +1,5 @@
 from datetime import datetime, timezone, timedelta
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update as sqlUpdate
 from sqlalchemy.orm import Session
 from collections.abc import Sequence
 
@@ -19,6 +19,7 @@ SEARCH_WINDOW_INCREMENT = 50
 SEARCH_WINDOW_START = 50
 
 MATCH_DURATION = timedelta(minutes=10)
+STALE_AFTER = timedelta(minutes=5)
 
 def create_match(
         db: Session, 
@@ -37,7 +38,6 @@ def create_match(
     # If a player has no actual rating, seed them based on their tachi seeds. If they have no tachi seeds, make some
     if rating is None:
         if seed_key not in user.rating_seeds:
-            print(seed_key)
             enqueue_tachi_seed(db, user.id)
             raise SeedPending()
         rating = seed_player_rating(db, user.id, game, playtype, ladder, user.rating_seeds[seed_key])
@@ -102,6 +102,7 @@ def search_for_chart(db: Session, search_rating: float, ladder: str, avoided_cha
 
     return None
 
+# This gets run for EVERYTHING that concludes matches. Such as forfeit, winning, losing, time ending, etc. Anytime we want to end a match legitimately, it should go through here.
 def resolve_match(db: Session, match_id: int, won: bool, evidence: dict | None) -> dict:
     match: Match = db.scalar(select(Match).where(Match.id == match_id).with_for_update())
 
@@ -239,10 +240,10 @@ def calculate_stakes(db: Session, user: User, match: Match) -> tuple[float, floa
 def scores_for_match(scores: list[dict], match: Match) -> list[dict]:
     end = match.forfeited_at or match.cutoff_time
 
-    return {
+    return [
         s for s in scores
         if s["chartID"] == match.chart_id and match.start_time <= score_time(s) <= end
-    }
+    ]
 
 def get_best_score_for_match(user: User, match: Match):
 
@@ -250,3 +251,13 @@ def get_best_score_for_match(user: User, match: Match):
     candidates = scores_for_match(scores, match)
 
     return choose_best_score(candidates)
+
+def cancel_stale_matches(db) -> int:
+    cutoff = datetime.now(timezone.utc) - STALE_AFTER
+    result = db.execute(
+        sqlUpdate(Match)
+        .where(Match.status == MatchStatus.ACTIVE, Match.cutoff_time < cutoff)
+        .values(status=MatchStatus.CANCELLED, end_time=func.now())
+    )
+
+    return result.rowcount

@@ -7,7 +7,7 @@ from app.core.enums import CancelReason, MatchStatus, MatchType
 from app.models import Match, UserAvoidedChart, User
 from app.services.match import calculate_stakes, get_active_match_by_userid, create_match
 from app.api.dependencies import CurrentUser, DbSession
-from app.job.enqueue import enqueue_match_pre_submission, enqueue_match_forfeit
+from app.job.enqueue import enqueue_match_pre_submission, enqueue_match_forfeit, enqueue_match_cleanup
 from app.core.errors import SeedPending
 
 from app.schemas.match import MatchOut, MatchWithStakesOut
@@ -113,6 +113,14 @@ def forfeit_active_match(db: DbSession, user: CurrentUser):
     db.commit()
 
     return {"message": "Submitted Forfeit!"}
+
+@router.put("/cleanup", status_code=status.HTTP_200_OK)
+def cleanup_active_matches(db: DbSession, user: CurrentUser):
+    enqueue_match_cleanup(db, user.id)
+
+    db.commit()
+
+    return {"message": "Submitted cleanup"}
 
 @router.get("/{user_id}/table", response_class=HTMLResponse)
 def serve_user_table_index(db: DbSession, user_id: int):

@@ -39,3 +39,6 @@ def enqueue_match_pre_submission(db, user_id: int, match_id: int) -> Job:
 
 def enqueue_match_forfeit(db, user_id: int, match_id: int) -> Job:
     return enqueue_job(db, user_id, "match_forfeit", {"matchId": match_id})
+
+def enqueue_match_cleanup(db, user_id: int) -> Job:
+    return enqueue_job(db, user_id, "match_cleanup")

@@ -15,7 +15,7 @@ def clears_for_match(scores: list[dict], match: Match):
     return [s for s in scores if meets_match_clear_requirements(s["scoreData"]["lamp"], match.ladder)]
 
 def choose_best_score(scores: list[dict]):
-    max(scores, key=lambda s: LAMP_RANK[s["scoreData"]["lamp"]]) if scores else None
+    return max(scores, key=lambda s: LAMP_RANK[s["scoreData"]["lamp"]]) if scores else None
 
 def lamp_counts_as_win(lamp: ClearTypes, ladder: str) -> bool:
     return LAMP_RANK[lamp] >= LAMP_RANK[LADDER_REQUIREMENT[ladder]]

@@ -1,11 +1,13 @@
 from datetime import datetime, timezone
+from sqlalchemy import update
+from sqlalchemy.orm import Session
 
 from app.models import User, Match
-from app.core.enums import ClearTypes
-from app.services.tachi import tachi_get, get_recent_scores
-from app.services.match import scores_for_match
+from app.core.enums import ClearTypes, MatchStatus
+from app.services.tachi import tachi_get
+from app.services.match import cancel_stale_matches
 from app.ratings import sieg_to_elo
-from app.logic.match import LAMP_RANK, choose_best_score, lamp_counts_as_win
+from app.logic.match import lamp_counts_as_win
 from app.services.match import resolve_match, get_best_score_for_match
 
 class JobError(Exception):
@@ -15,7 +17,7 @@ def in_match_window(score, match) -> bool:
     added = tachi_time(score["timeAdded"])
     achieved = tachi_time(score["timeAchieved"])
 
-    if added is None or not (match.start_time <= added <= match.cutoff_time + GRACE_PERIOD):
+    if added is None or not (match.start_time <= added <= match.cutoff_time):
         return False
     if achieved is not None and not (match.start_time <= achieved <= match.cutoff_time):
         return False
@@ -41,7 +43,6 @@ def save_seed_ratings(user, playtype: str, profile: dict) -> dict:
     if value is not None:
         seeds[f"bms:{playtype}:ec"] = { "elo": sieg_to_elo(value), "numScores": scores }
         seeds[f"bms:{playtype}:hc"] = { "elo": sieg_to_elo(value), "numScores": scores }
-        print(seeds)
     else:
         seeds[f"bms:{playtype}:ec"] = None
         seeds[f"bms:{playtype}:hc"] = None
@@ -92,7 +93,7 @@ def match_end_check(db, job):
     best_score = get_best_score_for_match(user, match)
 
     if best_score is not None:
-        won = lamp_counts_as_win(ClearTypes(best_score["scoreData"]["lamp"]))
+        won = lamp_counts_as_win(ClearTypes(best_score["scoreData"]["lamp"]), match.ladder)
     else:
         won = False
 
@@ -101,13 +102,17 @@ def match_end_check(db, job):
 def match_pre_submission(db, job):
     match = db.get(Match, job.payload.get("matchId"))
     user = db.get(User, job.user_id)
-
+    print("TEST")
     best_score = get_best_score_for_match(user, match)
+
+    print(best_score)
 
     if best_score is None:
         return {"match_id": match.id, "result": match.result}
 
     won = lamp_counts_as_win(ClearTypes(best_score["scoreData"]["lamp"]), match.ladder)
+
+    print(won)
 
     if won:
         return resolve_match(db, match.id, won, best_score)
@@ -122,11 +127,17 @@ def match_forfeit(db, job):
 
     return resolve_match(db, match.id, won, best_score)
 
+def match_cleanup(db, job):
+    rowCount = cancel_stale_matches(db)
+
+    return {"rowsAffected": rowCount}
+
 HANDLERS = {
     "tachi_recent_score": tachi_recent_score,
     "tachi_rating": tachi_rating,
     "tachi_seed_profile": tachi_seed_profile,
     "match_end_check": match_end_check,
     "match_pre_submission": match_pre_submission,
-    "match_forfeit": match_forfeit
+    "match_forfeit": match_forfeit,
+    "match_cleanup": match_cleanup
 }

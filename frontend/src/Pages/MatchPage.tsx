@@ -12,6 +12,7 @@ import ForegroundCard from "../Components/General/ForegroundCard";
 import ProgressBar from "../Components/General/ProgressBar";
 import { games, ladder, playtype } from "../util/dictionaryCorrections";
 import { toFixedTruncated } from "../util/helpers";
+import ScoreSummary from "../Components/Match/ScoreSummary";
 
 export default function MatchPage() {
 
@@ -40,20 +41,20 @@ export default function MatchPage() {
         .then(([match, tiers]) => {
             setMatch(match)
             setTiers(tiers.tiers)
-
-            console.log(match)
         })
     }, [user?.id, id])
 
     useEffect(() => {
-        if (!finished || !match) return
+        if (!finished || !match || match.status !== "active") return
+
+        let cancelled = false;
 
         async function runMatchCheck() {
             if (!match) return
 
             const finalizedMatch = await waitForMatch(match.id)
 
-            if (!finalizedMatch.result)
+            if (cancelled || !finalizedMatch.result)
                 return;
 
             setShowWin(true)
@@ -83,7 +84,7 @@ export default function MatchPage() {
         wins: -1
     }
 
-    if (loading || !match || tiers.length === 0) {
+    if (loading || !match || tiers.length === 0 || user == null) {
         return <div className="flex-1 flex items-center justify-center text-muted">Loading…</div>
     }
 
@@ -184,13 +185,27 @@ export default function MatchPage() {
                             <p className="font-archivo tracking-[0.2em] text-subtext text-sm mb-3">{games[match.game]} {playtype[match.playtype]} &middot; {ladder[match.ladder].toUpperCase()} &middot; <span className="text-highlight">{match.type.toUpperCase()}</span></p>
                             <h1 className="font-archivo text-5xl tracking-widest font-thin">Match #{id}</h1>
                         </div>
-                        <div>
-                            <h1 className="font-mono text-5xl tracking-widest font-bold mb-3 text-right">{msLeft === 0 ? "Ended" : formatTime(msLeft)}</h1>
-                            {
-                                <p className="font-sanchez text-subtext text-right tracking-[0.2em]">{msLeft === 0 ? "Ended" : "Cutoff Time - " + formatClock(match.cutoff_time)}</p>
-                            }
+                        {
+                            match.status == "active" ?
+                            <div>
+                                <h1 className="font-mono text-5xl tracking-widest font-bold mb-3 text-right">{msLeft === 0 ? "Ended" : formatTime(msLeft)}</h1>
+                                {
+                                    <p className="font-sanchez text-subtext text-right tracking-[0.2em]">{msLeft === 0 ? "Ended" : "Cutoff Time - " + formatClock(match.cutoff_time)}</p>
+                                }
 
-                        </div>
+                            </div> :
+                            <div>
+                                {
+                                    match.result == "win" ? <h1 className="font-archivo text-green-500 text-5xl tracking-widest font-bold mb-3 text-right">WIN</h1> : 
+                                    <h1 className="font-archivo text-red-500 text-5xl tracking-widest font-bold mb-3 text-right">LOSE</h1>
+                                }
+
+                                {
+                                    <p className="font-sanchez text-subtext text-right tracking-[0.2em]">{msLeft === 0 ? "Ended" : "Cutoff Time - " + formatClock(match.cutoff_time)}</p>
+                                }
+                            </div>
+                        }
+
                     </div>
                     <div className="w-1/2 mb-8">
                         <ProgressBar
@@ -264,7 +279,11 @@ export default function MatchPage() {
                         <ForegroundCard>
                             <div className="flex flex-row justify-between items-center">
                                 <div className="flex flex-row items-center gap-5">
-                                    <span className="size-3 rounded-full bg-red-500"></span>
+                                {
+                                    match.score == null ? 
+                                    
+                                    <>
+                                    <span className="size-3 rounded-full bg-yellow-500"></span>
                                     <div className="flex flex-col">
                                         <div>
                                             <p className="font-sanchez font-bold">No clear yet!</p>
@@ -272,27 +291,40 @@ export default function MatchPage() {
                                         <div>
                                             <p className="font-sanchez text-subtext">Click on <em>check scores</em> to check <em>Bokutachi</em> for recent scores!</p>
                                         </div>
-                                    </div>
+                                    </div> 
+                                    </> : 
+                                    <>
+                                        <ScoreSummary match={match} />
+                                    </>
+
+                                }
                                 </div>
 
                                 <div className="flex flex-row gap-4">
                                     {
+                                        match.status == "active" && match.user.id == user.id ? (
                                         skipMsLeft > 0 ? <Button onClick={handleSkip} className="font-sanchez bg-foreground border border-zinc-600/80 rounded-lg p-3 font-bold hover:brightness-130 cursor-pointer duration-150">Skip &middot; <span className="text-subtext text-sm">{Math.ceil(skipMsLeft / 1000) + "s left"}</span></Button> :
-                                        <Button className="font-sanchez bg-zinc-900 border border-zinc-600/80 rounded-lg p-3 font-bold cursor-not-allowed duration-150 text-zinc-700">Unavailable</Button> 
+                                        <Button className="font-sanchez bg-zinc-900 border border-zinc-600/80 rounded-lg p-3 font-bold cursor-not-allowed duration-150 text-zinc-700">Unavailable</Button> ) : <></>
                                     }
                                     
-                                    <Button onClick={handleSubmit} className="relative font-sanchez bg-highlight rounded-lg p-3 font-bold hover:brightness-130 cursor-pointer duration-150">
-                                        <span className={status === "verifying" ? "invisible" : ""}>Check Scores</span>
-                                        {status === "verifying" && (
-                                            <LoaderCircle className="absolute inset-0 m-auto size-4 animate-spin"/>
-                                        )}
-                                    </Button> 
+                                    {
+                                        match.status == "active" && match.user.id == user.id ? (
+                                        <Button onClick={handleSubmit} className="relative font-sanchez bg-highlight rounded-lg p-3 font-bold hover:brightness-130 cursor-pointer duration-150">
+                                            <span className={status === "verifying" ? "invisible" : ""}>Check Scores</span>
+                                            {status === "verifying" && (
+                                                <LoaderCircle className="absolute inset-0 m-auto size-4 animate-spin"/>
+                                            )}
+                                        </Button> ) : <></>
+                                    }
+
 
                                 </div>
                             </div>
                         </ForegroundCard>
                     </div>
                     <div className="w-1/2 mt-5">
+                    {
+                        match.status == "active" && match.user.id == user.id ? (
                         <ForegroundCard className="border-2 border-dotted border-zinc-500/50 flex-row items-center gap-5">
                             <p className="font-sanchez font-bold shrink-0">
                                 Load it in game!
@@ -323,77 +355,13 @@ export default function MatchPage() {
                                 </Menu>
                                 <Button onClick={handleForfeit} className="text-red-400 hover:brightness-110 duration-150 cursor-pointer underline tracking-wide">Forfeit</Button>
                             </div>
-                        </ForegroundCard>
+                        </ForegroundCard> ) : <></>
+                    }
+
                     </div>
                 </div>
 
             </div>
-
-
-            {/* <div>
-                <p className="uppercase font-archivo text-center font-light text-2xl tracking-widest mb-8">
-                    
-                    {
-                        match.ladder == "ec" ? "BMS EAASY CLEAR MATCH" : "BMS HARD CLEAR MATCH"
-                    }
-                    
-                    {
-                        match.status === "active" ?
-                        <span className="text-green-800"> ACTIVE</span> :
-                        <span className="text-red-800"> INACTIVE</span>
-                    }
-
-                </p>
-
-                <p className="uppercase font-archivo text-center font-light text-2xl tracking-widest mb-8">
-                    {formatTime(msLeft)}
-                </p>
-            </div>
-            <div className="w-1/2 bg-background-dark border-zinc-500 border p-5 rounded-md flex flex-row gap-7 relative">
-                <div className="absolute -right-3 -top-3">
-                    <Button
-                    onClick={handleForfeit}
-                    aria-label="Cancel match"
-                    className="inline-flex size-10 items-center justify-center rounded-full bg-red-800
-                                data-hover:bg-red-700 data-active:scale-95
-                                data-focus:outline-2 data-focus:outline-highlight
-                                data-disabled:opacity-50 transition
-                                cursor-pointer"
-                    >
-                        <LogOut className="size-5" />
-                    </Button>
-                </div>
-                <div className="w-full grid grid-cols-3 gap-x-7 gap-y-20 items-center justify-items-center">
-                    <p className="font-bold font-sanchez tracking-widest text-subtext">YOU</p>
-                    <p className="col-span-2 font-sanchez font-bold text-xl tracking-wide text-subtext text-center">
-                        {match.chart.artist} - {match.chart.title} {match.chart.subtitle ?? ""}
-                    </p>
-
-                    <QueueIcon
-                        tierIndex={tierIndex}
-                        division={division}
-                        progress={progress}
-                        tiers={tiers}
-                        displayProgress={false}
-                        displayRating={true}
-                    />
-                    <div className="col-span-2">
-                        <QueueIcon
-                        tierIndex={chartTierIndex}
-                        division={chartDivision}
-                        progress={0}
-                        tiers={tiers}
-                        displayProgress={false}
-                        displayRating={true}
-                        />
-                    </div>
-                <div className="col-span-3 w-full flex justify-end">
-                    <div className="flex flex-row gap-5">
-                        <Button disabled={skipFinished} onClick={handleSkip} className="font-sanchez inline-flex items-center gap-2 bg-zinc-500 brightness-80 hover:brightness-100 duration-200 cursor-pointer p-3 rounded-sm font-semibold">Skip <Send className="size-4"/></Button>
-                        <Button onClick={handleSubmit} className="font-sanchez inline-flex items-center gap-2 bg-highlight brightness-80 hover:brightness-100 duration-200 cursor-pointer p-3 rounded-sm font-semibold">Submit <Send className="size-4"/></Button>
-                    </div>
-                </div>
-                </div> */}
             
         </div>
     )
