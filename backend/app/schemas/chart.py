@@ -27,3 +27,9 @@ class ChartOut(BaseModel):
     sg_hc: float | None
     ratings: list[ChartRatingOut]
     table_levels: list[ChartLevelOut]
+
+class TableSearchOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    table_icon: str
+    count: int

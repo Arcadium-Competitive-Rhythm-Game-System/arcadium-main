@@ -35,7 +35,7 @@ export function QueueIcon(props: QueueIconProps) {
 
 
     return (
-    <div className="flex items-center h-ful flex-col gap-4">
+    <div className="w-full flex items-center h-ful flex-col gap-4">
         <div className="h-32 flex items-end justify-center">
             {
                 rank.ranked ?
@@ -61,7 +61,7 @@ export function QueueIcon(props: QueueIconProps) {
         
             {
                 props.displayProgress && rank.ranked ?
-                <div className="w-3/4">
+                <div className="w-full">
                     <ProgressBar
                     value={rank.progress?.percent ?? 0}
                     className="bg-highlight w-full" 
@@ -70,7 +70,7 @@ export function QueueIcon(props: QueueIconProps) {
                     />
                     <div className="font-sanchez flex flex-row justify-between text-subtext mt-2 text-sm">
                         <p>{rank.progress?.start}</p>
-                        <p>{rank.next?.label} &middot; {rank.next?.at}</p>
+                        <p>{rank.next?.at}</p>
                     </div> 
                     </div>
                     : (<></>)

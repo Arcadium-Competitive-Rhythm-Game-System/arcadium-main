@@ -9,23 +9,19 @@ export default function MatchPrep() {
     const { user, loading } = useAuth();
     const { game, playtype, ladder } = useParams();
 
-    const [rating, setRating] = useState<UserRating[]>([])
-    const [tiers, setTiers] = useState<Tier[]>([])
+    const [rating, setRating] = useState<UserRating>()
     const [canQueue, setCanQueue] = useState<CanQueue>({can_queue: false})
     const [error, setError] = useState<string>();
 
     useEffect(() => {
-        console.log("Effect ran!")
         if (!user) return;
 
         Promise.all([
-            api<UserRating[]>(`/users/me/ratings/${game}/${playtype}/${ladder}`),
-            api<TierData>("/info/tiers"),
+            api<UserRating>(`/users/me/ratings/${game}/${playtype}/${ladder}`),
             api<CanQueue>("/users/me/can-queue")
         ])
-        .then(([rating, tiers, canQueue]) => {
+        .then(([rating, canQueue]) => {
             setRating(rating);
-            setTiers(tiers.tiers);
             setCanQueue(canQueue)
         })
         .catch(err => {
@@ -33,27 +29,27 @@ export default function MatchPrep() {
             setError(err.message)
         })
     }, [user])
-
-    const unrankedUserRating : UserRating = { 
-        ladder:  ladder ?? "ec",
-        display_rating: -1,
-        placed: false,
-        games_played: rating.length == 0 ? -1 : rating[0].games_played,
-        rank: -1,
-        total: rating.length == 0 ? 0 : rating[0].total,
-        wins: rating.length == 0 ? 0 : rating[0].wins,
-        losses: rating.length == 0 ? 0 : rating[0].losses
-    }
     
-    if (loading || tiers.length === 0) {
+    if (loading || !rating) {
         return <div className="flex-1 flex items-center justify-center text-muted">Loading…</div>
     }
 
     return (
-        <div className="flex-1 flex items-center justify-center w-5/6 mx-auto lg:w-full">
-            <QueueIcon
-            
-            />
+        <div className="flex-1 flex-row flex items-center justify-center w-5/6 mx-auto lg:w-5/6">
+            <div className="w-[15%]">
+                <QueueIcon
+                rating={rating.display_rating}
+                displayRating={true}
+                displayProgress={true}
+                />
+            </div>
+            <div>
+                <p className="font-archivo tracking-[0.2em]">General Tables</p>
+                <hr className="text-zinc-600/85 mt-2" />
+
+
+            </div>
+
         </div>
     )
 }
