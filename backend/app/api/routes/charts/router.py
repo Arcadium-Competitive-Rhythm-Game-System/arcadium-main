@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, Query
 from typing import Annotated
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload, Session
 
 from app.core.db import get_db
-from app.models import Chart, ChartRating
+from app.api.dependencies import DbSession
+from app.models import Chart, ChartRating, ChartTableLevel
+from app.logic.ratings import ELO_FLOOR
+from app.services.match import SEARCH_WINDOW_START
 
 from app.schemas.chart import ChartOut
 
@@ -33,3 +36,27 @@ def get_charts(
 
     stmt = stmt.order_by(ChartRating.rating).limit(limit).offset(offset)
     return db.scalars(stmt).all()
+
+@router.get("/get_table_search_counts/{game}/{playtype}/{ladder}/{elo}", response_model=dict[str, int])
+def get_table_search_counts(db: DbSession, elo: int, game: str, playtype: str, ladder: str):
+
+    low = max(ELO_FLOOR, elo - SEARCH_WINDOW_START)
+    high = elo + SEARCH_WINDOW_START
+
+    search = (
+        select(
+        ChartTableLevel.table_icon,
+        func.count(func.distinct(ChartTableLevel.chart_id)).label("count"),
+    
+        )
+        .join(ChartRating, ChartRating.chart_id == ChartTableLevel.chart_id)
+        .where(
+            ChartRating.ladder == ladder,
+            ChartRating.rating.between(low, high),
+        )
+        .group_by(ChartTableLevel.table_icon)
+    )
+
+    rows = db.execute(search).all()
+
+    return {r.table_icon: r.count for r in rows}

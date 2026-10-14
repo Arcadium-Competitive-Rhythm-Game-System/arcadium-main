@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import QueueCard from "./QueueCard";
-import { type UserRating, type Tier, type CanQueue, type Job, type TierData } from "../../util/NetworkModels";
+import type { UserRating, Tier, CanQueue, Job, TierData } from "../../util/NetworkModels";
 import { api, waitForJob } from "../../util/helpers";
-import { Button, Field, Fieldset, Input, Label, Legend } from "@headlessui/react";
+import { Button, Field, Fieldset, Input, Label } from "@headlessui/react";
 import { MessageCircleDashedCheck } from "lucide-react";
 
 export default function QueueDashboard() {

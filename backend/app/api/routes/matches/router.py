@@ -6,11 +6,13 @@ from typing import Annotated
 from app.core.enums import CancelReason, MatchStatus, MatchType
 from app.models import Match, UserAvoidedChart, User
 from app.services.match import calculate_stakes, get_active_match_by_userid, create_match
+from app.services.tables import valid_table_icons
 from app.api.dependencies import CurrentUser, DbSession
 from app.job.enqueue import enqueue_match_pre_submission, enqueue_match_forfeit, enqueue_match_cleanup
-from app.core.errors import SeedPending
+from app.core.errors import SeedPending, InvalidTables
+from app.logic.ratings import find_rating_for_filter
 
-from app.schemas.match import MatchOut, MatchWithStakesOut
+from app.schemas.match import MatchOut, MatchWithStakesOut, StartMatchIn
 
 router = APIRouter(prefix="/match", tags=["match"])
 
@@ -30,9 +32,17 @@ def get_match_by_id(db: DbSession, match_id: int):
     return MatchWithStakesOut(**base.model_dump(), potential_gain=pt_gain, potential_loss=pt_loss)
 
 @router.post("/create", response_model=MatchWithStakesOut, status_code=status.HTTP_201_CREATED)
-def start_match(game: str, playtype: str, ladder: str, db: DbSession, user: CurrentUser, elo: Annotated[float | None, Query(ge=100, le=2050)] = None, type: MatchType = MatchType.COMPETITIVE):
+def start_match(db: DbSession, user: CurrentUser, game: str, playtype: str, ladder: str, body: StartMatchIn, elo: Annotated[float | None, Query(ge=100, le=4200)] = None, type: MatchType = MatchType.COMPETITIVE):
     if not user.tachi_api_key or user.tachi_api_key == "":
         raise HTTPException(status.HTTP_409_CONFLICT, "No Tachi key found. Please set up your Tachi API key!")
+
+    print(body.tables)
+    print(valid_table_icons())
+
+    invalid = set(body.tables) - valid_table_icons()
+
+    if invalid:
+        raise InvalidTables()
 
     active_match = get_active_match_by_userid(db, user.id)
 
@@ -40,7 +50,7 @@ def start_match(game: str, playtype: str, ladder: str, db: DbSession, user: Curr
         raise HTTPException(status.HTTP_409_CONFLICT, "You already have an active match!")
 
     try:
-        new_match = create_match(db, user, game, playtype, ladder, type, elo)
+        new_match = create_match(db, user, game, playtype, ladder, type, elo, body.tables)
     except SeedPending:
         db.commit()
         raise HTTPException(status.HTTP_409_CONFLICT, "Your rating is still being set up!")
@@ -86,7 +96,9 @@ def skip_active_match(db: DbSession, user: CurrentUser):
 
     db.flush()
 
-    new_match = create_match(db, user, active_match.game, active_match.playtype, active_match.ladder, active_match.type, active_match.search_elo, [a.chart_id for a in user.avoided_charts])
+    rating = find_rating_for_filter(user.ratings, active_match.game, active_match.playtype, active_match.ladder)
+
+    new_match = create_match(db, user, active_match.game, active_match.playtype, active_match.ladder, active_match.type, active_match.search_elo, rating["selected_tables"], [a.chart_id for a in user.avoided_charts])
 
     pt_gain, pt_loss = calculate_stakes(db, user, new_match)
 

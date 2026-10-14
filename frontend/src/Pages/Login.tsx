@@ -1,7 +1,7 @@
 import { Button, Field, Fieldset, Input, Label, Legend } from "@headlessui/react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth";
-import React, { useState } from "react";
+import { useState } from "react";
 
 export default function Login() {
 

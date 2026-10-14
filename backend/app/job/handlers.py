@@ -102,17 +102,12 @@ def match_end_check(db, job):
 def match_pre_submission(db, job):
     match = db.get(Match, job.payload.get("matchId"))
     user = db.get(User, job.user_id)
-    print("TEST")
     best_score = get_best_score_for_match(user, match)
-
-    print(best_score)
 
     if best_score is None:
         return {"match_id": match.id, "result": match.result}
 
     won = lamp_counts_as_win(ClearTypes(best_score["scoreData"]["lamp"]), match.ladder)
-
-    print(won)
 
     if won:
         return resolve_match(db, match.id, won, best_score)

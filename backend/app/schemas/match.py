@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator, Field
 
 from app.schemas.auth import UserOut
 from app.schemas.chart import ChartOut
@@ -54,3 +54,6 @@ class MatchDataOut(BaseModel):
 
     wins: int
     losses: int
+
+class StartMatchIn(BaseModel):
+    tables: list[str] = Field(min_length=1)

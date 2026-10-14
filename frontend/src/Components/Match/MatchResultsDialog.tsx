@@ -1,47 +1,35 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle, Button } from "@headlessui/react";
-import { Trophy, X } from "lucide-react";
-import type { Tier } from "../../util/NetworkModels";
 import { QueueIcon } from "../Home/QueueCard";
 import ProgressBar from "../General/ProgressBar";
-import { buildSteps, divisionProgress, nextTierInfo, returnBeginningAndEndRating, toFixedTruncated, toRoman } from "../../util/helpers";
-import type { BetweenTierData } from "../../util/MiscInterfaces";
+import { toFixedTruncated } from "../../util/helpers";
 import { useEffect, useMemo, useState } from "react";
+import { buildSteps } from "../../util/rank";
+import { useRank, useTiers } from "../../hooks/useTiers";
 
 type MatchResultDialogProps = {
   open: boolean;
   win: boolean;
-  onClose: () => void;
+  onClose: (queue: boolean) => void;
   ratingChange?: number;
-
-  tierIndex: number | null;
-  division: number | null;
-  tiers: Tier[];
   rating_before: number;
   rating_after: number;
 };
 
-export function MatchResultsDialog({ open, win, onClose, ratingChange, tierIndex, division, tiers, rating_before, rating_after }: MatchResultDialogProps) {
+export function MatchResultsDialog({ open, win, onClose, ratingChange, rating_before, rating_after }: MatchResultDialogProps) {
 
-  const begAndEndRating : BetweenTierData = returnBeginningAndEndRating(rating_before ?? 0, rating_after ?? 0, tiers)
+  const { tiers } = useTiers();
+
   const steps = useMemo(
-    () => buildSteps(rating_before ?? 0, rating_after ?? 0, tiers),
+    () => (tiers ? buildSteps(rating_before, rating_after, tiers) : []),
     [rating_before, rating_after, tiers]
   );
-
-  const next = useMemo(
-  () => nextTierInfo(rating_after, steps[steps.length - 1], tiers),
-  [rating_after, steps, tiers]
-  );
-
-  const nextTier = next.nextTierIndex != null ? tiers[next.nextTierIndex] : null;
-  const lastStep = steps.length > 0 ? steps[steps.length - 1] : null;
-  const range = lastStep ? divisionProgress(tiers, rating_after, lastStep.tierIndex) : null;
-
-  console.log(steps);
 
   const [i, setI] = useState(0);
   const [currProgress, setCurrProgress] = useState(steps[0].from)
   const [animate, setAnimate] = useState(false);
+
+  const step = steps[i];
+  const stepRank = useRank(step?.rating ?? null);
 
   useEffect(() => {
     if (!open) return
@@ -55,11 +43,6 @@ export function MatchResultsDialog({ open, win, onClose, ratingChange, tierIndex
     }, 50)
     return () => clearTimeout(id);
   }, [i, open])
-
-  useEffect(() => {
-    if (currProgress == 100)
-      console.log("SWAP RATINGS")
-  }, [currProgress])
 
   return (
     <Dialog open={open} onClose={onClose} className="relative z-50">
@@ -84,10 +67,7 @@ export function MatchResultsDialog({ open, win, onClose, ratingChange, tierIndex
           </DialogTitle>
 
           <QueueIcon
-            tierIndex={steps[i].tierIndex}
-            division={steps[i].divisionNumber}
-            tiers={tiers}
-            rating={rating_after}
+            rating={step.rating}
             displayRating={true}
             displayProgress={false}
           />
@@ -101,25 +81,31 @@ export function MatchResultsDialog({ open, win, onClose, ratingChange, tierIndex
               if (i < steps.length - 1) setI(i + 1);
             }}
             />
-                    <div className="font-sanchez flex flex-row justify-between text-subtext mt-2 text-sm">
-                      <p>{range?.start ?? 0}</p>
-                      <p>
-                        {nextTier?.name} {next.nextDivision !== null ? toRoman(next.nextDivision) : "V"} &middot; {range?.end ?? 0}
-                      </p>
-                    </div> 
+            {
+              stepRank?.ranked && stepRank.progress && (
+                <div className="font-sanchez flex flex-row justify-between text-subtext mt-2 text-sm">
+                  <p>{stepRank.progress.start}</p>
+                    {stepRank.next && <p>{stepRank.next.label} &middot; {stepRank.next.at}</p>}
+                </div> 
+              )
+            }
+
           </div>
 
           <p className="font-archivo text-2xl mt-5">
             <span className={`${rating_after >= rating_before ? "text=green-800" : "text-red-800"} bg-background px-4 py-2 rounded-md`}>{rating_after > rating_before ? "+" : ""}{toFixedTruncated((rating_after - rating_before), 0)}</span>
           </p>
+          <div className="flex flex-col lg:flex-row gap-1 lg:gap-20 w-5/6 mx-auto lg:w-full">
+            <Button onClick={() => onClose(false)} className="font-sanchez w-full h-10  mt-6 border border-zinc-700 text-zinc-300 hover:bg-zinc-800 duration-200 cursor-pointer rounded-sm font-semibold">Close</Button>
+            <Button
+              onClick={() => onClose(true)}
+              className="mt-6 w-full h-10 rounded-md bg-highlight font-semibold
+                        data-hover:brightness-110 transition cursor-pointer"
+            >
+              Queue Again
+            </Button>
+          </div>
 
-          <Button
-            onClick={onClose}
-            className="mt-6 w-full h-10 rounded-md bg-highlight font-semibold
-                       data-hover:brightness-110 transition cursor-pointer"
-          >
-            Continue
-          </Button>
         </DialogPanel>
       </div>
     </Dialog>
