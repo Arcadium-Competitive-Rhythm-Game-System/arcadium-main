@@ -32,6 +32,7 @@ def find_rating_for_filter(ratings: list[PlayerRating], game: str, playtype: str
                 "display_rating": rating.display_rating,
                 "placed": rating.placed,
                 "games_played": rating.games_played,
+                "selected_tables": rating.selected_tables
             }
 
     return None

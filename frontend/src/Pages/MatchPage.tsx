@@ -23,6 +23,7 @@ export default function MatchPage() {
 
     const [status, setStatus] = useState<SubmitStatus>("idle");
     const [message, setMessage] = useState<string | null>(null);
+    const [forfeitLoad, setForfeitLoad] = useState<boolean>(false);
 
     const [showWin, setShowWin] = useState<boolean>(false);
     const [matchResult, setMatchResult] = useState<string>("lose");
@@ -103,6 +104,9 @@ export default function MatchPage() {
             
             if (!match) return
 
+            console.log("HI!");
+            setForfeitLoad(true)
+
             const finalizedMatch = await waitForMatch(match.id)
 
             if (!finalizedMatch.result)
@@ -111,6 +115,7 @@ export default function MatchPage() {
             setShowWin(true)
             setMatchResult(finalizedMatch.result)
             setMatch(finalizedMatch);
+            setForfeitLoad(false)
 
         } catch (err) {
             setStatus("error");
@@ -133,9 +138,11 @@ export default function MatchPage() {
                 <MatchResultsDialog
                 open={showWin}
                 win={matchResult === "win" ? true : false}
-                onClose={() => {
+                onClose={(queue: boolean) => {
                     setShowWin(false);
-                    navigate("/")
+
+                    if (queue)
+                        navigate(`/prep/${match.game}/${match.playtype}/${match.ladder}`)
                 }}
                 rating_after={match.player_display_after}
                 rating_before={match.player_display_before}
@@ -152,7 +159,7 @@ export default function MatchPage() {
                                 <span>·</span>
                                 <span>EASY CLEAR</span>
                                 <span className="">·</span>
-                                <span className="text-purple-400">COMPETITIVE</span>
+                                <span className="text-purple-400 uppercase">{match.type}</span>
                                 </div>
                             <h1 className="text-center lg:text-left font-archivo text-5xl tracking-widest font-thin">Match #{id}</h1>
                         </div>
@@ -266,7 +273,7 @@ export default function MatchPage() {
                                 }
                                 </div>
 
-                                <div className="w-5/6 lg:w-auto mt-3 lg:mt-auto flex flex-col lg:flex-row gap-4">
+                                <div className="w-5/6 lg:w-auto mt-3 lg:mt-auto flex flex-col lg:flex-row gap-4 shrink-0">
                                     {
                                         match.status == "active" && match.user.id == user.id ? (
                                         skipMsLeft > 0 ? <Button onClick={handleSkip} className="font-sanchez bg-foreground border border-zinc-600/80 rounded-lg p-3 font-bold hover:brightness-130 cursor-pointer duration-150">Skip &middot; <span className="text-subtext text-sm">{Math.ceil(skipMsLeft / 1000) + "s left"}</span></Button> :
@@ -319,7 +326,12 @@ export default function MatchPage() {
                                         </MenuItem>
                                     </MenuItems>
                                 </Menu>
-                                <Button onClick={handleForfeit} className="text-red-400 hover:brightness-110 duration-150 cursor-pointer underline tracking-wide">Forfeit</Button>
+                                {
+                                    forfeitLoad ?
+                                    <Button className="text-red-400 cursor-pointer"><span className="shrink-0 text-subtext"><LoaderCircle className=" m-auto size-4 animate-spin"/></span></Button> :
+                                    <Button onClick={handleForfeit} className="text-red-400 hover:brightness-110 duration-150 cursor-pointer underline tracking-wide">Forfeit</Button>
+                                }
+                                
                             </div>
                         </ForegroundCard> ) : <></>
                     }

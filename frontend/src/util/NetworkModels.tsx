@@ -9,6 +9,7 @@ export interface UserRating {
     total: number;
     wins: number;
     losses: number; 
+    selected_tables: string[];
 }
 
 export interface MatchSubmit {

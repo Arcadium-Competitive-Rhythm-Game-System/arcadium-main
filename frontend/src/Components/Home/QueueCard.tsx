@@ -91,15 +91,7 @@ export default function QueueCard(props: QueueCardProps) {
     }
 
     type MatchType = (typeof MatchType)[keyof typeof MatchType];
-
-    const handleQueue = async (type: MatchType) => {
-        api<Match>(`/match/create?game=bms&playtype=7k&ladder=${props.rating.ladder}&type=${type}`, { method: "POST" })
-        .then((match) => {
-            navigate(`/match/${match.id}`)
-        })
-        .catch(err => console.log(err.message))
-    }
-
+    
     return loading ? (
         <></>
     ) : (

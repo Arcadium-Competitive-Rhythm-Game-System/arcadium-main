@@ -9,7 +9,7 @@ import { useRank, useTiers } from "../../hooks/useTiers";
 type MatchResultDialogProps = {
   open: boolean;
   win: boolean;
-  onClose: () => void;
+  onClose: (queue: boolean) => void;
   ratingChange?: number;
   rating_before: number;
   rating_after: number;
@@ -95,14 +95,17 @@ export function MatchResultsDialog({ open, win, onClose, ratingChange, rating_be
           <p className="font-archivo text-2xl mt-5">
             <span className={`${rating_after >= rating_before ? "text=green-800" : "text-red-800"} bg-background px-4 py-2 rounded-md`}>{rating_after > rating_before ? "+" : ""}{toFixedTruncated((rating_after - rating_before), 0)}</span>
           </p>
+          <div className="flex flex-col lg:flex-row gap-1 lg:gap-20 w-5/6 mx-auto lg:w-full">
+            <Button onClick={() => onClose(false)} className="font-sanchez w-full h-10  mt-6 border border-zinc-700 text-zinc-300 hover:bg-zinc-800 duration-200 cursor-pointer rounded-sm font-semibold">Close</Button>
+            <Button
+              onClick={() => onClose(true)}
+              className="mt-6 w-full h-10 rounded-md bg-highlight font-semibold
+                        data-hover:brightness-110 transition cursor-pointer"
+            >
+              Queue Again
+            </Button>
+          </div>
 
-          <Button
-            onClick={onClose}
-            className="mt-6 w-full h-10 rounded-md bg-highlight font-semibold
-                       data-hover:brightness-110 transition cursor-pointer"
-          >
-            Continue
-          </Button>
         </DialogPanel>
       </div>
     </Dialog>

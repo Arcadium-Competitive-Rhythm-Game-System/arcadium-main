@@ -51,6 +51,7 @@ class UserRatingOut(BaseModel):
     total: int
     wins: int
     losses: int
+    selected_tables: list[str]
 
 class UserOut(BaseModel):
     id: int

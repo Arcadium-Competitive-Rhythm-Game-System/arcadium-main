@@ -27,6 +27,7 @@ def get_user_ratings(db: DbSession, user: CurrentUser):
             "display_rating": rating.display_rating,
             "placed": rating.placed,
             "games_played": rating.games_played,
+            "selected_tables": rating.selected_tables,
             "rank": rank,
             "total": total,
             "wins": wins,
@@ -50,6 +51,7 @@ def get_user_rating_filtered(game: str, playtype: str, ladder: str, db: DbSessio
                 "display_rating": rating.display_rating,
                 "placed": rating.placed,
                 "games_played": rating.games_played,
+                "selected_tables": rating.selected_tables,
                 "rank": rank,
                 "total": total,
                 "wins": wins,
@@ -79,8 +81,6 @@ def get_table_search_counts(db: DbSession, user: CurrentUser, game: str, playtyp
         raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not logged in!")
 
     rating = find_rating_for_filter(user.ratings, game, playtype, ladder)
-
-    print(rating["display_rating"])
 
     low = max(ELO_FLOOR, rating["display_rating"] - SEARCH_WINDOW_START)
     high = rating["display_rating"] + SEARCH_WINDOW_START

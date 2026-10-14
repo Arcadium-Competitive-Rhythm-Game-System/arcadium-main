@@ -7,3 +7,7 @@ class ChartNotFoundForRating(Exception):
 class MatchNotFound(Exception):
     def __init__(self, match_id: int):
         super().__init__(f"Match {match_id} not found.")
+
+class InvalidTables(Exception):
+    def __init__(self):
+        super().__init__(f"A table input does not exist!")

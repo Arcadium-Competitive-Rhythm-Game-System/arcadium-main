@@ -1,22 +1,22 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
-import QueueCard, { QueueIcon } from "../Components/Home/QueueCard";
-import type { CanQueue, TableCounts, Tier, TierData, UserRating } from "../util/NetworkModels";
+import { QueueIcon } from "../Components/Home/QueueCard";
+import type { Match, TableCounts, UserRating } from "../util/NetworkModels";
 import { api, toFixedTruncated } from "../util/helpers";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import type { TableInfo } from "../util/MiscInterfaces";
-import { Button, Checkbox, Field, Input, Label, Radio, RadioGroup } from "@headlessui/react";
+import { Button, Input, Radio, RadioGroup } from "@headlessui/react";
 import ForegroundCard from "../Components/General/ForegroundCard";
-import { LoaderCircle, Podium } from "lucide-react";
+import { Podium } from "lucide-react";
 import { playtype as playtypeCorrect, games, ladder as ladderCorrect } from "../util/dictionaryCorrections";
 import { useDebounce } from "../util/useDebounce";
+import TableSection from "../Components/Match/TableSection";
 
 export default function MatchPrep() {
     const { user, loading } = useAuth();
     const { game, playtype, ladder } = useParams();
 
     const [rating, setRating] = useState<UserRating>()
-    const [canQueue, setCanQueue] = useState<CanQueue>({can_queue: false})
     const [error, setError] = useState<string>();
 
     const [selected, setSelected] = useState<string[]>([])
@@ -27,6 +27,7 @@ export default function MatchPrep() {
     const [casualCounts, setCasualCounts] = useState<TableCounts>();
 
     const debouncedRating = useDebounce(targetRating, 400);
+    const navigate = useNavigate();
 
     function toggle(icon: string, on: boolean) {
         setSelected(prev => on ? [...prev, icon] : prev.filter(i => i !== icon))
@@ -42,6 +43,7 @@ export default function MatchPrep() {
         { tableIcon: "sr", tableName: "Starlight", category: "general" },
         { tableIcon: "sl", tableName: "Satellite", category: "general" },
         { tableIcon: "st", tableName: "Stella", category: "general" },
+        { tableIcon: "dy", tableName: "Dystopia", category: "general" },
         { tableIcon: "Ude", tableName: "Arm Shougakkou", category: "skillset" },
         { tableIcon: "乱打", tableName: "Code Stream (sl)", category: "skillset" },
         { tableIcon: "重発狂", tableName: "Code Stream (st)", category: "skillset" },
@@ -49,7 +51,6 @@ export default function MatchPrep() {
         { tableIcon: "fr", tableName: "Exoplanet", category: "skillset" },
         { tableIcon: "双", tableName: "Gachimijoy", category: "skillset" },
         { tableIcon: "◆", tableName: "LN", category: "skillset" },
-        { tableIcon: "◆◆", tableName: "LN Overjoy", category: "skillset" },
         { tableIcon: "ln", tableName: "Luminous", category: "skillset" },
         { tableIcon: "SB", tableName: "Scramble", category: "skillset" },
         { tableIcon: "h◎", tableName: "Scratch 3rd", category: "skillset" },
@@ -59,27 +60,25 @@ export default function MatchPrep() {
 
     const generalTables = TABLES.filter(t => t.category === "general");
     const skillsetTables = TABLES.filter(t => t.category === "skillset");
-    const generalSelected = generalTables.filter(t => selected.includes(t.tableIcon)).length;
     const skillsetSelected = skillsetTables.filter(t => selected.includes(t.tableIcon)).length;
-    const allGeneral = generalSelected === generalTables.length;
+
     const allSkillset = skillsetSelected === skillsetTables.length;
     const selectedCharts = selected.reduce((sum, icon) => sum + (tableCounts?.[icon] ?? 0), 0);
     const MAX_ELO = 4300;
     const MIN_ELO = 100;
+
+    const countsKey = matchType === "competitive" ? "competitive" : debouncedRating;
 
     useEffect(() => {
         if (!user) return;
 
         Promise.all([
             api<UserRating>(`/users/me/ratings/${game}/${playtype}/${ladder}`),
-            api<CanQueue>("/users/me/can-queue"),
-            api<TableCounts>(`/users/me/get_table_search_counts/${game}/${playtype}/${ladder}`)
         ])
-        .then(([rating, canQueue, compCounts]) => {
+        .then(([rating]) => {
+            setSelected(rating.selected_tables)
             setRating(rating);
-            setCanQueue(canQueue)
             setTargetRating(rating.display_rating)
-            setTableCounts(compCounts)
         })
         .catch(err => {
             console.log(err.message)
@@ -104,7 +103,42 @@ export default function MatchPrep() {
         }
 
         if (Number.isNaN(debouncedRating)) return;
-    }, [matchType, debouncedRating])
+    }, [countsKey])
+
+    const handleQueue = async () => {
+        if (matchType == "competitive") 
+        {
+            api<Match>(`/match/create?game=${game}&playtype=${playtype}&ladder=${ladder}&type=${matchType}`, 
+                { 
+                    method: "POST",
+                    body: JSON.stringify({ tables: selected })
+                })
+            .then((match) => {
+                navigate(`/match/${match.id}`)
+            })
+            .catch(err => console.log(err.message))
+        }
+        else {
+            api<Match>(`/match/create?game=${game}&playtype=${playtype}&ladder=${ladder}&type=${matchType}&elo=${debouncedRating}`, 
+                { 
+                    method: "POST",
+                    body: JSON.stringify({ tables: selected })
+                })
+            .then((match) => {
+                navigate(`/match/${match.id}`)
+            })
+            .catch(err => console.log(err.message))            
+        }
+
+    }
+
+    const selectAll = (tables: TableInfo[], on: boolean) => {
+        const icons = tables.map(t => t.tableIcon);
+        setSelected(prev => {
+            const rest = prev.filter(i => !icons.includes(i));
+            return on ? [...rest, ...icons] : rest;
+        })
+    }
 
     useEffect(() => {
         if (rating == null)
@@ -117,24 +151,18 @@ export default function MatchPrep() {
         return <div className="flex-1 flex items-center justify-center text-muted">Loading…</div>
     }
 
-    const selectAll = (tables: TableInfo[], on: boolean) => {
-        const icons = tables.map(t => t.tableIcon);
-        setSelected(prev => {
-            const rest = prev.filter(i => !icons.includes(i));
-            return on ? [...rest, ...icons] : rest;
-        })
-    }
+
 
     return (
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex w-5/6 mx-auto lg:w-auto items-center justify-center mt-5">
             <div className="flex flex-col">
                 <div>
                     <p className="font-archivo text-subtext uppercase tracking-[0.2em]">{games[game]} {playtypeCorrect[playtype]} &middot; {ladderCorrect[ladder]}</p>
                     <h1 className="font-extrabold text-4xl tracking-[0.2em] mt-3 mb-3">Choose Your Tables</h1>
                     <p className="font-sanchez text-subtext mb-5">Charts are only drawn from within the tables you pick</p>
                 </div>
-                <div className="flex w-full max-w-7xl items-start gap-8 mt-5">
-                    <ForegroundCard className="w-72 shrink-0">
+                <div className="flex lg:flex-row flex-col w-full max-w-7xl lg:items-start gap-8 mt-5">
+                    <ForegroundCard className="lg:w-72 w-full shrink-0">
                         <QueueIcon
                         rating={rating.display_rating}
                         displayRating={true}
@@ -186,69 +214,32 @@ export default function MatchPrep() {
                     </ForegroundCard>
                     <div className="flex-1 min-w-0">
                         <div className="self-start">
-                            <div className="justify-between flex flex-row">
-                                <div>
-                                <p className="font-archivo tracking-[0.2em] mb-5">General Tables <span className="text-subtext font-sanchez text-xs tracking-wide">{generalSelected} of {generalTables.length} selected</span></p>
-                                </div>
-                                <Button className="text-blue-300 hover:text-blue-200 cursor-pointer duration-200" onClick={() => selectAll(generalTables, !allGeneral)}>Select All</Button>
-                            </div>
+                            <TableSection 
+                            label={"General Tables"}
+                            tables={generalTables}
+                            selected={selected}
+                            tableCounts={tableCounts}
+                            selectAll={selectAll}
+                            toggle={toggle}
+                            />
 
-                            <hr className="text-zinc-600/85 mt-2 mb-5" />
-                            <div className="grid grid-cols-3 gap-1">
-                                {generalTables.map(t => (
-                                    <Field className="w-full" key={t.tableIcon}>
-                                        <Checkbox
-                                        checked={selected.includes(t.tableIcon)}
-                                        onChange={(on) => toggle(t.tableIcon, on)}
-                                        className="select-none font-sanchez group flex gap-4 items-center justify-between rounded-xl border border-zinc-700 pr-3 pl-2 py-2 cursor-pointer
-                                        data-checked:border-highlight data-checked:bg-highlight/10 mb-2 bg-background-dark hover:bg-background duration-150"
-                                        >
-                                            <span className="group-data-checked:bg-highlight/10 group-data-checked:border border border-transparent group-data-checked:border-highlight/50 w-16 shrink-0 rounded-md bg-zinc-800 py-2 text-center font-bold">{t.tableIcon}</span>
-                                            <Label className="flex-1 min-w-0 truncate cursor-pointer">{t.tableName}</Label>
-                                            {
-                                                !tableCounts ?
-                                                <span className="shrink-0 text-subtext"><LoaderCircle className=" m-auto size-4 animate-spin"/></span> :
-                                                <span className="shrink-0 text-subtext">{tableCounts[t.tableIcon]}</span>
-                                            }
-                                            
-                                        </Checkbox>
-                                    </Field>
-                                ))}
-                            </div>
-                            <div className="justify-between flex flex-row mt-5">
-                                <div>
-                                <p className="font-archivo tracking-[0.2em] mb-5">Skillset Tables <span className="text-subtext font-sanchez text-xs tracking-wide">{skillsetSelected} of {skillsetTables.length} selected</span></p>
-                                </div>
-                                <Button className="text-blue-300 hover:text-blue-200 cursor-pointer duration-a200" onClick={() => selectAll(skillsetTables, !allSkillset)}>Select All</Button>
-                            </div>
-                            <hr className="text-zinc-600/85 mt-2 mb-5" />
-                            <div className="grid grid-cols-[repeat(3,minmax(17rem,1fr))] gap-1">
-                                {skillsetTables.map(t => (
-                                    <Field key={t.tableIcon}>
-                                        <Checkbox
-                                        checked={selected.includes(t.tableIcon)}
-                                        onChange={(on) => toggle(t.tableIcon, on)}
-                                        className="select-none font-sanchez group gap-4 flex items-center justify-between rounded-xl border border-zinc-700 pr-3 pl-2 py-2 cursor-pointer
-                                        data-checked:border-highlight data-checked:bg-highlight/10 mb-2 bg-background-dark hover:bg-background duration-150"
-                                        >
-                                            <span className="group-data-checked:bg-highlight/10 group-data-checked:border border border-transparent group-data-checked:border-highlight/50 w-16 shrink-0 rounded-md bg-zinc-800 py-2 text-center font-bold">{t.tableIcon}</span>
-                                            <Label className="flex-1 min-w-0 truncate cursor-pointer">{t.tableName}</Label>
-                                            {
-                                                !tableCounts ?
-                                                <span className="shrink-0 text-subtext"><LoaderCircle className=" m-auto size-4 animate-spin"/></span> :
-                                                <span className="shrink-0 text-subtext">{tableCounts[t.tableIcon]}</span>
-                                            }
-                                        </Checkbox>
-                                    </Field>
-                                ))}
-                            </div>
+                            <div className="mt-10"></div>
+
+                            <TableSection 
+                            label={"Skillset Tables"}
+                            tables={skillsetTables}
+                            selected={selected}
+                            tableCounts={tableCounts}
+                            selectAll={selectAll}
+                            toggle={toggle}
+                            />
 
                             <ForegroundCard className="mt-5">
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <p className="font-sanchez">{selected.length} Tables &middot; up to {selectedCharts} Charts In Range</p>
                                     </div>
-                                    <Button disabled={selectedCharts < 25} className="font-sanchez inline-flex items-center gap-2 bg-highlight brightness-80 hover:brightness-100 duration-200 cursor-pointer p-3 rounded-sm font-bold">Queue <Podium className="size-5 font-bold"/></Button>
+                                    <Button onClick={handleQueue} disabled={selectedCharts < 25} className="font-sanchez inline-flex items-center gap-2 bg-highlight brightness-80 hover:brightness-100 duration-200 cursor-pointer p-3 rounded-sm font-bold">Queue <Podium className="size-5 font-bold"/></Button>
                                 </div>
                             </ForegroundCard>
                         </div>

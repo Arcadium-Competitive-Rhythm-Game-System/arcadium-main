@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from app.services.tachi import score_from_tachi, score_time, get_recent_scores
 from app.core.enums import MatchType, MatchStatus, MatchResult
 from app.core.errors import SeedPending, ChartNotFoundForRating, MatchNotFound
-from app.models import User, Chart, ChartRating, Match, PlayerRating
+from app.models import User, Chart, ChartRating, Match, PlayerRating, ChartTableLevel
 from app.services.rating import get_player_rating, seed_player_rating, get_chart_rating
 from app.services.streaks import effective_rd
 from app.job.enqueue import enqueue_tachi_seed, enqueue_match_final_check
@@ -29,6 +29,7 @@ def create_match(
         ladder: str, 
         match_type: MatchType, 
         elo: float | None,
+        tables: list[str],
         avoided_chart_ids: Sequence[str] = ()
     ) -> Match:
     seed_key = f"{game}:{playtype}:{ladder}"    # When a player is seeded, it's keyed in this format
@@ -42,12 +43,14 @@ def create_match(
             raise SeedPending()
         rating = seed_player_rating(db, user.id, game, playtype, ladder, user.rating_seeds[seed_key])
 
+    rating.selected_tables = tables
+
     search_rating = rating.display_rating
 
     if match_type == MatchType.CASUAL and elo is not None:
         search_rating = elo
 
-    chart_row = search_for_chart(db, search_rating, ladder, avoided_chart_ids)
+    chart_row = search_for_chart(db, search_rating, ladder, tables, avoided_chart_ids)
 
     if chart_row is None:
         raise ChartNotFoundForRating()
@@ -79,10 +82,15 @@ def create_match(
 
     return match
 
-def search_for_chart(db: Session, search_rating: float, ladder: str, avoided_chart_ids: Sequence[str] = ()) -> tuple[Chart, ChartRating] | None:
+def search_for_chart(db: Session, search_rating: float, ladder: str, tables: list[str], avoided_chart_ids: Sequence[str] = ()) -> tuple[Chart, ChartRating] | None:
     curr_window = SEARCH_WINDOW_START
 
     while curr_window <= MAX_SEARCH_WINDOW:
+        in_selected_tables = (
+            select(ChartTableLevel.chart_id)
+            .where(ChartTableLevel.table_icon.in_(tables))
+)
+
         random_chart = db.execute(
             select(Chart, ChartRating)
             .join(ChartRating)
@@ -90,7 +98,8 @@ def search_for_chart(db: Session, search_rating: float, ladder: str, avoided_cha
                 ChartRating.ladder == ladder,
                 ChartRating.rating >= max(ELO_FLOOR, search_rating - curr_window),
                 ChartRating.rating <= search_rating + curr_window,
-                Chart.chart_id.not_in(avoided_chart_ids)
+                Chart.chart_id.not_in(avoided_chart_ids),
+                Chart.chart_id.in_(in_selected_tables)
             ).order_by(func.random())
             .limit(1)
         ).tuples().first()
@@ -114,7 +123,8 @@ def resolve_match(db: Session, match_id: int, won: bool, evidence: dict | None) 
     if evidence is not None:
         match.score = score_from_tachi(evidence)
 
-    apply_rating_update(db, match, won)
+    if match.type == MatchType.COMPETITIVE:
+        apply_rating_update(db, match, won)
 
     match.status = MatchStatus.RESOLVED
     match.result = MatchResult.WIN if won else MatchResult.LOSS
