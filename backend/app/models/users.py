@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Index, ForeignKey, String, UniqueConstraint, func, text
+from sqlalchemy import DateTime, Index, ForeignKey, String, UniqueConstraint, func, text, ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -102,12 +102,12 @@ class PlayerRating(Base):
     playtype: Mapped[str] = mapped_column(String(8), primary_key=True)
     ladder: Mapped[str] = mapped_column(String(8), primary_key=True)
 
-    # Internal rating
+    selected_tables: Mapped[list[str]] = mapped_column(ARRAY(String), server_default="{}")
+
     rating: Mapped[float] = mapped_column(default=850)
     rd: Mapped[float] = mapped_column(default=300)
     volatility: Mapped[float] = mapped_column(default=0.06)
 
-    # Player visibly sees
     display_rating: Mapped[float] = mapped_column(default=850)
     placed: Mapped[bool] = mapped_column(default=False)
 

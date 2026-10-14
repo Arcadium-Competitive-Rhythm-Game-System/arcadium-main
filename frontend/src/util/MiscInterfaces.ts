@@ -8,3 +8,11 @@ export interface BetweenTierData {
     startingProgress: TierProgressData;
     endingProgress: TierProgressData
 }
+
+export interface TableInfo {
+    tableIcon: string;
+    tableName: string;
+    category: TableCategory
+}
+
+export type TableCategory = "general" | "skillset"

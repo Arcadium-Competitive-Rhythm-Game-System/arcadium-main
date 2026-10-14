@@ -73,7 +73,7 @@ def can_queue(user: CurrentUser):
 def get_user_active_match(db: DbSession, user: CurrentUser):
     return get_active_match_by_userid(db, user.id)
 
-@router.get("/me/get_table_search_counts/{game}/{playtype}/{ladder}", response_model=list[TableSearchOut])
+@router.get("/me/get_table_search_counts/{game}/{playtype}/{ladder}", response_model=dict[str, int])
 def get_table_search_counts(db: DbSession, user: CurrentUser, game: str, playtype: str, ladder: str):
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not logged in!")
@@ -101,4 +101,4 @@ def get_table_search_counts(db: DbSession, user: CurrentUser, game: str, playtyp
 
     rows = db.execute(search).all()
 
-    return [TableSearchOut(table_icon=r.table_icon, count=r.count) for r in rows]
+    return {r.table_icon: r.count for r in rows}

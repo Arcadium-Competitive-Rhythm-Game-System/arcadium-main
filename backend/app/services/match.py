@@ -28,7 +28,7 @@ def create_match(
         playtype: str, 
         ladder: str, 
         match_type: MatchType, 
-        elo: float | None, 
+        elo: float | None,
         avoided_chart_ids: Sequence[str] = ()
     ) -> Match:
     seed_key = f"{game}:{playtype}:{ladder}"    # When a player is seeded, it's keyed in this format

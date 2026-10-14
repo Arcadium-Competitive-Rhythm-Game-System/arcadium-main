@@ -10,7 +10,7 @@ from app.api.dependencies import CurrentUser, DbSession
 from app.job.enqueue import enqueue_match_pre_submission, enqueue_match_forfeit, enqueue_match_cleanup
 from app.core.errors import SeedPending
 
-from app.schemas.match import MatchOut, MatchWithStakesOut
+from app.schemas.match import MatchOut, MatchWithStakesOut, StartMatchIn
 
 router = APIRouter(prefix="/match", tags=["match"])
 
@@ -30,7 +30,7 @@ def get_match_by_id(db: DbSession, match_id: int):
     return MatchWithStakesOut(**base.model_dump(), potential_gain=pt_gain, potential_loss=pt_loss)
 
 @router.post("/create", response_model=MatchWithStakesOut, status_code=status.HTTP_201_CREATED)
-def start_match(game: str, playtype: str, ladder: str, db: DbSession, user: CurrentUser, elo: Annotated[float | None, Query(ge=100, le=2050)] = None, type: MatchType = MatchType.COMPETITIVE):
+def start_match(db: DbSession, user: CurrentUser, game: str, playtype: str, ladder: str, body: StartMatchIn, elo: Annotated[float | None, Query(ge=100, le=4200)] = None, type: MatchType = MatchType.COMPETITIVE):
     if not user.tachi_api_key or user.tachi_api_key == "":
         raise HTTPException(status.HTTP_409_CONFLICT, "No Tachi key found. Please set up your Tachi API key!")
 

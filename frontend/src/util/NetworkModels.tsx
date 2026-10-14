@@ -106,3 +106,5 @@ export interface MatchScore {
     percent: number;
     bp: number;
 }
+
+export type TableCounts = Record<string, number>;
