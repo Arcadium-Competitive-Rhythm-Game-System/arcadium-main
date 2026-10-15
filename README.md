@@ -1,6 +1,30 @@
 # Arcadium
 
-BMS competitive chart system.
+Rhythm Game competitive chart system.
+
+## Supported Games & Ladders
+- BMS
+    - 7K
+        - Easy Clear Ladder
+        - Hard Clear Ladder
+
+## What Is This?
+Arcadium is a project that aims to add a more competitive nature to rhythm games, with an ELO system and a progression through tiers. Currently, the goal is to support BMS, but with the potential to support many more rhythm games over time!
+
+### How Does It Work?
+Both players and charts have an ELO rating, and you get matchmade with charts in a similar range. You have `10` minutes to succeed at the given ladder's requirements (currently Easy Clear and Hard Clear) in order to "win". After a match, both players and charts fluctuate in rating. This means charts that are rated too low, will naturally be bumped up to where they should be, which means hopefully over time, the ladder will continue to feel more fair and rewarding.
+
+The goal of this project is to provide more ways to play rhythm games, and add a solo competitive flair that pushes you to your limits. If you're where you should be, you will win and lose at relatively the same rate.
+
+### Score Integration
+Currently, for ease of development and use, we integrate with [Bokutachi](https://boku.tachi.ac/) which is an Internet Ranking for BMS, and other home-based rhythm gaming. For arcade games, we may also consider [Kamaitachi](https://kamai.tachi.ac/) when that time comes. Or perhaps develop score hooks.
+
+### The Future After Release
+There are lots of ways we can take this app. The main goal is to keep it open source and allow anyone to develop additional ladders and mechanics. As long as discussions are kept close, I'm open to all forms of games and developments. 
+
+For me, I'd like to integrate with Unnamed SDVX Clone (USC) next, and use the custom chart scale that's already on Bokutachi. This also means to make the backend and frontend more dynamic. Which will allow a large variety of games to play around with.
+
+Additionally, for BMS, we currently just use the Sieglinde scale that Bokutachi uses. It works well enough, but it doesn't contain every chart. I'd like to develop algorithms or mechanics to give ELOs to charts that aren't on the Sieglinde scale.
 
 ## How to run
 
@@ -16,12 +40,3 @@ In the root, run `npm run build` or `npm run build-verbose`.
 Run `npm run migrate` to run the database migrations.
 
 Run `npm run seed` to get all chart data and other necessary data into the database.
-
-## What is this?
-Arcadium is an alternative way to experience BMS (a rhythm game). It is a competitive ladder where you are battling against charts. Both you and the charts you're playing have an ELO rating. And clearing charts increases your ELO while reducing the ELO of the charts you're playing.
-
-You are given a seed and eventually an ELO. Then, when you queue, you are given a chart within a certain amount of ELO from you, as well as `12` minutes to clear the chart. If you clear within the allotted time, you gain ELO and the chart loses ELO. 
-
-As you keep playing, the hope is you will continue to get a variety of charts to play, start improving at various skillsets, and try to grind and become a Grandmaster. 
-
-This README will be further cleaned up with screenshots, and link, and more once the front end is built and we're actually live. This is currently heavily WIP!

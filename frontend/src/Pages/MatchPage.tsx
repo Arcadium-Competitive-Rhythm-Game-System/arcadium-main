@@ -176,7 +176,7 @@ export default function MatchPage() {
                                 <div>
                                     {
                                         match.result == "win" ? <h1 className="font-archivo text-green-500 text-5xl tracking-widest font-bold mb-3 text-right">WIN</h1> : 
-                                        <h1 className="font-archivo text-red-500 text-5xl tracking-widest font-bold mb-3 text-right">LOSE</h1>
+                                        <h1 className="text-center font-archivo text-red-500 text-5xl tracking-widest font-bold mb-3 lg:text-right">LOSE</h1>
                                     }
 
                                     {
