@@ -16,6 +16,7 @@ import Register from './Pages/Register.tsx'
 import MatchPrep from './Pages/MatchPrep.tsx'
 import MatchPage from './Pages/MatchPage.tsx'
 import { TierProvider } from './hooks/useTiers.tsx'
+import ProfilePage from './Pages/ProfilePage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -33,7 +34,8 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <HomePage />},
           { path: "prep/:game/:playtype/:ladder", element: <MatchPrep />},
-          { path: "match/:id", element: <MatchPage />}
+          { path: "match/:id", element: <MatchPage />},
+          { path: "/profile/:id", element: <ProfilePage /> }
         ]
       }
 

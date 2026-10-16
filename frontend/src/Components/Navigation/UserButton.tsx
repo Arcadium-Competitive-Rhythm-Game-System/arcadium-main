@@ -27,7 +27,7 @@ export default function UserButton() {
             className="focus:outline-none flex flex-col gap-6 bg-foreground p-5 rounded-md font-bold transition duration-150 ease-out data-closed:opacity-0 w-50"
             >
                 <MenuItem>
-                    <Link className="hover:text-highlight duration-150" to="/">Profile</Link>
+                    <Link className="hover:text-highlight duration-150" to={`/profile/${user?.id}`}>Profile</Link>
                 </MenuItem>
                 <MenuItem>
                     <Link onClick={logout} className="hover:text-highlight duration-150" to="/">Log Out</Link>
