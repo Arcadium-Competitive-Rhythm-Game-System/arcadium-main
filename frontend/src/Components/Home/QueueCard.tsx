@@ -40,8 +40,8 @@ export function QueueIcon(props: QueueIconProps) {
         <div className="h-32 flex items-end justify-center">
             {
                 rank.ranked || props.tierName ?
-                <img className="h-28 w-auto" src={props.rating ? returnIcon(rank.tier.name) : returnIcon(props.tierName ?? "Unranked")}/> :
-                <img className="h-28 w-auto" src={returnIcon("Unranked")}/>
+                <img className="h-28 w-auto shrink-0 object-contain [image-rendering:pixelated]" src={props.rating ? returnIcon(rank.tier.name) : returnIcon(props.tierName ?? "Unranked")}/> :
+                <img className="h-28 w-auto shrink-0 object-contain [image-rendering:pixelated]" src={returnIcon("Unranked")}/>
             }
 
         </div>

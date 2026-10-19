@@ -12,7 +12,7 @@ export default function ProfileRatingOverTime({ className, series }: ProfileRati
     return (
         <ForegroundCard className={cn("flex flex-col gap-5", className)}>
             <p className="font-archivo text-subtext tracking-widest">RATING OVER TIME</p>
-            <div className="flex-1 min-h-45">
+            <div className="h-52 lg:flex-1 lg:min-h-45">
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={series}>
                         <defs>

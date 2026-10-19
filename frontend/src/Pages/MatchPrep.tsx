@@ -3,13 +3,13 @@ import { useAuth } from "../hooks/useAuth";
 import { QueueIcon } from "../Components/Home/QueueCard";
 import type { Match, TableCounts, UserRating } from "../util/NetworkModels";
 import { api, toFixedTruncated } from "../util/helpers";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import type { TableInfo } from "../util/MiscInterfaces";
 import { Button, Input, Radio, RadioGroup } from "@headlessui/react";
 import ForegroundCard from "../Components/General/ForegroundCard";
 import { Podium } from "lucide-react";
 import { playtype as playtypeCorrect, games, ladder as ladderCorrect } from "../util/dictionaryCorrections";
-import { useDebounce } from "../util/useDebounce";
+import { useDebounce } from "../hooks/useDebounce";
 import TableSection from "../Components/Match/TableSection";
 
 export default function MatchPrep() {
@@ -28,6 +28,7 @@ export default function MatchPrep() {
 
     const debouncedRating = useDebounce(targetRating, 400);
     const navigate = useNavigate();
+    const location = useLocation();
 
     function toggle(icon: string, on: boolean) {
         setSelected(prev => on ? [...prev, icon] : prev.filter(i => i !== icon))
@@ -84,7 +85,7 @@ export default function MatchPrep() {
             console.log(err.message)
             setError(err.message)
         })
-    }, [user])
+    }, [user?.id, game, playtype, ladder])
 
     useEffect(() => {
         setTableCounts(undefined);
@@ -154,7 +155,7 @@ export default function MatchPrep() {
 
 
     return (
-        <div className="flex-1 flex w-5/6 mx-auto lg:w-auto items-center justify-center mt-5">
+        <div key={location.pathname} className="flex-1 flex w-5/6 mx-auto lg:w-auto items-center justify-center mt-5">
             <div className="flex flex-col">
                 <div>
                     <p className="font-archivo text-subtext uppercase tracking-[0.2em]">{games[game]} {playtypeCorrect[playtype]} &middot; {ladderCorrect[ladder]}</p>

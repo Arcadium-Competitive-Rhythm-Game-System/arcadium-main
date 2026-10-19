@@ -30,7 +30,7 @@ export function GetRatingForCount(count: number, milestoneLadder: MilestoneLadde
 
 export function GetNextTier(count: number, milestoneLadder: MilestoneLadder): MilestoneLadder[number] | null {
     for (let i = 0; i < milestoneLadder.length-1; i++) {
-        if (count <= milestoneLadder[i].value)
+        if (count < milestoneLadder[i].value)
             return milestoneLadder[i]
     }
 

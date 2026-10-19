@@ -11,7 +11,7 @@ export default function ProfileTierCard({ className }: ProfileTierCardProps) {
         <div className={cn("w-full", className)}>
             <ForegroundCard>
                 <QueueIcon 
-                rating={3000}
+                rating={2930}
                 displayProgress={true}
                 displayRating={true}
                 />

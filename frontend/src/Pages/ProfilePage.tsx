@@ -1,10 +1,14 @@
 import ForegroundCard from "../Components/General/ForegroundCard";
 import { QueueIcon } from "../Components/Home/QueueCard";
+import ProfileActivityCalendar from "../Components/Profile/ProfileActivityCalendar";
 import ProfileGameTabs from "../Components/Profile/ProfileGameTabs";
 import ProfileHeader from "../Components/Profile/ProfileHeader";
+import ProfileLampsAndRecents from "../Components/Profile/ProfileLampsAndRecents";
 import ProfileMilestoneCard from "../Components/Profile/ProfileMilestoneCard";
 import ProfileRatingOverTime from "../Components/Profile/ProfileRatingOverTime";
+import ProfileRecentMatches from "../Components/Profile/ProfileRecentMatches";
 import ProfileStatRow from "../Components/Profile/ProfileStatRow";
+import ProfileTableWinrate from "../Components/Profile/ProfileTableWinrate";
 import ProfileTierCard from "../Components/Profile/ProfileTierCard";
 import { useAuth } from "../hooks/useAuth";
 import { bmsAACollector, bmsVeteran } from "../util/milestoneDictionaries";
@@ -59,7 +63,7 @@ export default function ProfilePage() {
         )
 
     return (
-        <div className="flex flex-col gap-5 mx-auto w-1/2 mt-10">
+        <div className="flex flex-col gap-5 mx-auto w-7/8 lg:w-1/2 mt-10">
             <ProfileHeader
             displayName={user?.display_name}
             />
@@ -67,12 +71,12 @@ export default function ProfilePage() {
             ratings={[]}
             />
 
-            <div className="flex flex-row gap-5">
+            <div className="flex flex-col lg:flex-row gap-5">
                 <ProfileTierCard 
-                className="w-1/4"
+                className="w-full lg:w-1/4"
                 />
 
-                <div className="w-3/4 flex flex-col gap-5">
+                <div className="w-full lg:w-3/4 flex flex-col gap-5">
                     <ProfileStatRow className="flex-1"/>
 
                     <ProfileRatingOverTime
@@ -84,25 +88,36 @@ export default function ProfilePage() {
             <p className="font-archivo p-2 tracking-[0.2em]">MILESTONES</p>
             <hr className="text-zinc-600"/>
 
-            <div className="flex flex-row gap-10">
+            <div className="flex flex-col lg:flex-row gap-5">
                 <ProfileMilestoneCard
                 className="flex-1"
                 milestoneName="AA Collector"
                 countTitle="AAs"
                 descriptor="AA or better"
                 milestoneLadder={bmsAACollector}
-                value={2}
+                value={89}
                 />
                 <ProfileMilestoneCard
                 className="flex-1"
                 milestoneName="Veteran"
                 countTitle="matches"
-                descriptor="Play a ranked match"
+                descriptor="Ranked matches played"
                 milestoneLadder={bmsVeteran}
-                value={577}
+                value={150}
                 />
             </div>
 
+            <div className="flex flex-col lg:flex-row gap-5">
+                <ProfileTableWinrate className="flex-1" />
+
+                <ProfileLampsAndRecents className="flex-1"/>
+            </div>
+
+            <div className="flex flex-col lg:flex-row gap-5">
+                <ProfileActivityCalendar className="flex-1" />
+
+                <ProfileRecentMatches className="flex-1" />
+            </div>
         </div>
     )
 }

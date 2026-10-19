@@ -51,6 +51,8 @@ export default function ProfileMilestoneCard({ className, milestoneName, countTi
                 <p className="font-mono text-subtext">{value} {countTitle}</p>
                 <ProgressBar
                 value={progress}
+                animate={false}
+                durationMs={0}
                 />
                 <p className="font-sanchez text-subtext text-sm">{nextTierText} {nextTier ? ` more for ${nextTier.tierName}` : ""} &middot; {descriptor}</p>
                 <div className="flex flex-row">
