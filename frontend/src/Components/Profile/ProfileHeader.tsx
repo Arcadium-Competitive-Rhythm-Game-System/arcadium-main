@@ -1,8 +1,17 @@
+import { timeSince } from "../../util/helpers";
+
 interface ProfileHeaderProps {
-    displayName: string
+    displayName: string;
+    date: string;
 }
 
-export default function ProfileHeader({ displayName } : ProfileHeaderProps) {
+export default function ProfileHeader({ displayName, date } : ProfileHeaderProps) {
+    const convertDateToString = () => {
+        const joined = new Date(date);
+
+        return joined.toLocaleDateString("en-US", { month: "short", year: "numeric" })
+    }
+
     return (
         <div className="flex flex-row items-center gap-5 bg-zinc-800/20 p-2 border border-zinc-600/50">
             <div>
@@ -15,7 +24,7 @@ export default function ProfileHeader({ displayName } : ProfileHeaderProps) {
             <div>
                 <p className="font-archivo text-lg uppercase text-subtext tracking-[0.2em]">Player Profile</p>
                 <p className="font-sanchez text-4xl mt-2 tracking-wide">{displayName}</p>
-                <p className="font-sanchez text-sm mt-2 text-subtext">Joined Sep 2024 &middot; 2y</p>
+                <p className="font-sanchez text-sm mt-2 text-subtext">Joined {convertDateToString()} &middot; {timeSince(date)}</p>
             </div>
 
         </div>

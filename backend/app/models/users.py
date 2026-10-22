@@ -112,6 +112,8 @@ class PlayerRating(Base):
     placed: Mapped[bool] = mapped_column(default=False)
 
     games_played: Mapped[int] = mapped_column(default=0)
+    wins: Mapped[int] = mapped_column(default=0, server_default="0")
+    peak_rating: Mapped[float] = mapped_column(default=0, server_default="0")
     last_played_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

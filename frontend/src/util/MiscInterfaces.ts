@@ -39,3 +39,9 @@ export type MilestoneLadder = readonly [
 ];
 
 export type TableCategory = "general" | "skillset"
+
+export interface ActivityData {
+  date: string;
+  count: number;
+  level: number;
+}

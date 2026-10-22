@@ -1,9 +1,9 @@
 import { Button, Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react"
-import type { UserRating } from "../../util/NetworkModels"
+import type { ProfileRating, UserRating } from "../../util/NetworkModels"
 import { CornerDownRight } from "lucide-react"
 
 interface ProfileGameTabsProps {
-    ratings: UserRating[]
+    ratings: ProfileRating[]
 }
 
 export default function ProfileGameTabs({ ratings } : ProfileGameTabsProps) {

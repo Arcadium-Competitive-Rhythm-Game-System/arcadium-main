@@ -1,7 +1,7 @@
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { cn } from "../../util/helpers";
 import ForegroundCard from "../General/ForegroundCard";
-import type { RatingPoint } from "../../Pages/ProfilePage";
+import type { RatingPoint } from "../../util/NetworkModels";
 
 interface ProfileRatingOverTimeProps {
     className?: string;
@@ -21,9 +21,33 @@ export default function ProfileRatingOverTime({ className, series }: ProfileRati
                                 <stop offset="100%" stopColor="#A855F7" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <XAxis dataKey="match_id" hide />
-                        <YAxis domain={["dataMin - 50", "dataMax + 50"]} width={40} tick={{ fill: "#71717A", fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ background: "#121215", border: "1px solid #2A2A31" }} />
+                        <XAxis 
+                        dataKey="date" 
+                        tickFormatter={d => new Date(d).toLocaleDateString(undefined, { month: "short" })}
+                        minTickGap={30}
+                        />
+                        <YAxis 
+                        domain={["dataMin - 50", "dataMax + 50"]} 
+                        width={40} 
+                        tick={{ fill: "#71717A", fontSize: 11 }} 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tickFormatter={v => Math.round(v).toString()}
+                        allowDecimals={false}
+                        />
+                        <Tooltip 
+                        contentStyle={{ background: "#121215", border: "1px solid #2A2A31" }} 
+                        content={({active, payload}) => {
+                            if (!active || !payload?.length) return null;
+                            const p = payload[0].payload as RatingPoint;
+                            return (
+                                <div className="rounded-md border border-zinc-700 bg-background-dark px-3 py-2 text-sm">
+                                    <span className="font-mono font-bold">{Math.round(p.rating)}</span>
+                                    <div className="text-subtext text-xs">{new Date(p.date).toLocaleDateString()}</div>
+                                </div>
+                            )
+                        }}  
+                        />
                         <Area type="monotone" dataKey="rating" stroke="#A855F7" strokeWidth={2.5} fill="url(#ratingFill)" />
                     </AreaChart>
                 </ResponsiveContainer>

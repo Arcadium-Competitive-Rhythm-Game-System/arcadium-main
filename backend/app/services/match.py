@@ -154,6 +154,12 @@ def apply_rating_update(db: Session, match: Match, won: bool):
     player.volatility = player_new.volatility
     player.games_played += 1
 
+    if won:
+        player.wins += 1
+
+    if player.peak_rating == 0 or player.display_rating > player.peak_rating:
+        player.peak_rating = player.display_rating
+
     chart.rating = chart_new.rating
     chart.rd = chart_new.rd
     chart.volatility = chart_new.volatility
