@@ -200,6 +200,7 @@ export default function MatchPage() {
                             <p className="font-archivo font-thin tracking-[0.2em] text-subtext">YOU</p>
                             <QueueIcon
                                 rating={match.player_display_before}
+                                placed={match.player_placed_before}
                                 displayProgress={true}
                                 displayRating={true}
                             />

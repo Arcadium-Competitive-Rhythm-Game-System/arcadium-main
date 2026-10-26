@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from collections.abc import Sequence
 
 from app.services.tachi import score_from_tachi, score_time, get_recent_scores
-from app.core.enums import MatchType, MatchStatus, MatchResult
+from app.core.enums import MatchType, MatchStatus, MatchResult, ClearTypes
 from app.core.errors import SeedPending, ChartNotFoundForRating, MatchNotFound
 from app.models import User, Chart, ChartRating, Match, PlayerRating, ChartTableLevel
 from app.services.rating import get_player_rating, seed_player_rating, get_chart_rating
@@ -148,8 +148,13 @@ def apply_rating_update(db: Session, match: Match, won: bool):
     player_new = update(player_old, chart_old, s)
     chart_new = update(chart_old, player_old, 1 - s)
 
-    player.display_rating = player_new.rating
-    player.rating = player_new.rating
+    rating_change = player_new.rating - player.display_rating
+
+    if match.score is not None and match.ladder == "ec" and match.score.lamp == ClearTypes.ASSIST_CLEAR:
+        rating_change = rating_change / 2
+
+    player.display_rating = player.display_rating + rating_change
+    player.rating = player.rating + rating_change
     player.rd = player_new.rd
     player.volatility = player_new.volatility
     player.games_played += 1
