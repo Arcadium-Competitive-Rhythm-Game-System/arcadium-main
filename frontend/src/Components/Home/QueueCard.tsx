@@ -18,7 +18,8 @@ interface QueueCardProps {
 }
 
 interface QueueIconProps {
-    rating: number;
+    rating?: number;
+    tierName?: string;
     placed?: boolean;
     displayProgress?: boolean;
     displayRating?: boolean
@@ -26,7 +27,7 @@ interface QueueIconProps {
 
 export function QueueIcon(props: QueueIconProps) {
 
-    const rank = useRank(props.rating, props.placed);
+    const rank = useRank(props.rating ?? 0, props.placed);
 
     if (!rank)
         return (
@@ -38,21 +39,23 @@ export function QueueIcon(props: QueueIconProps) {
     <div className="w-full flex items-center h-ful flex-col gap-4">
         <div className="h-32 flex items-end justify-center">
             {
-                rank.ranked ?
-                <img className="h-28 w-auto" src={returnIcon(rank.tier.name)}/> :
-                <img className="h-28 w-auto" src={returnIcon("Unranked")}/>
+                rank.ranked || props.tierName ?
+                <img className="h-28 w-auto shrink-0 object-contain [image-rendering:pixelated]" src={props.rating ? returnIcon(rank.tier.name) : returnIcon(props.tierName ?? "Unranked")}/> :
+                <img className="h-28 w-auto shrink-0 object-contain [image-rendering:pixelated]" src={returnIcon("Unranked")}/>
             }
 
         </div>
         <div className="font-archivo items-center font-light text-xl tracking-widest">
             {
-             rank.ranked 
-            ? `${rank.tier.name} ${rank.progress?.division ? toRoman(rank.progress.division) : ""}`
-            : "Unranked"
+                props.tierName
+                ? props.tierName
+                : rank.ranked
+                    ? `${rank.tier.name} ${rank.progress?.division ? toRoman(rank.progress.division) : ""}`
+                    : "Unranked"
             }
         </div>
         {
-            props.displayRating && rank.ranked ? (
+            props.rating && props.displayRating && rank.ranked ? (
             <div className="font-mono text-xl font-extrabold flex items-center gap-3">
                 {toFixedTruncated(props.rating, 0)} <span className="text-subtext font-light text-[15px]">≈ {rank.siegRating.symbol} {rank.siegRating.level.toFixed(2)}</span>
             </div>

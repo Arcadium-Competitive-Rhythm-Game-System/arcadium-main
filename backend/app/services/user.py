@@ -1,0 +1,156 @@
+from datetime import datetime, timezone, timedelta
+from sqlalchemy import select, func
+from sqlalchemy.orm import Session
+
+from app.models import User, MatchScore, Match, PlayerRating, ChartTableLevel
+from app.schemas.user import RatingPointOut, TableWinrateOut
+from app.core.enums import MatchType, MatchStatus
+
+def get_user_by_id(db: Session, id: int):
+    return db.get(User, id)
+
+def get_num_double_a(db: Session, user_id: int, playtype: str, ladder: str):
+    AA_OR_BETTER = ("AA", "AAA", "MAX")
+
+    return db.scalar(
+        select(func.count())
+        .select_from(MatchScore)
+        .join(Match, MatchScore.match_id == Match.id)
+        .where(
+            Match.user_id == user_id,
+            Match.game == "bms",
+            Match.playtype == playtype,
+            Match.ladder == ladder,
+            Match.type == MatchType.COMPETITIVE,
+            MatchScore.grade.in_(AA_OR_BETTER)
+        )
+    ) or 0
+
+def get_rank_on_ladder(db: Session, rating: PlayerRating):
+    same_ladder = (
+        PlayerRating.game == rating.game,
+        PlayerRating.ladder == rating.ladder,
+        PlayerRating.playtype == rating.playtype
+    )
+
+    higher = db.scalar(
+        select(func.count()).where(*same_ladder, PlayerRating.display_rating > rating.display_rating)
+    )
+
+    total = db.scalar(select(func.count()).where(*same_ladder))
+
+    return higher + 1, total
+
+def get_last_played_on_ladder(db: Session, user_id: int, game: str, playtype: str, ladder: str) -> datetime | None:
+    latest_match = db.scalars(
+        select(Match)
+        .where(
+            Match.user_id == user_id,
+            Match.game == game,
+            Match.playtype == playtype,
+            Match.ladder == ladder,
+            Match.type == MatchType.COMPETITIVE
+        )
+        .order_by(Match.start_time.desc())
+    ).first()
+
+    return latest_match.start_time if latest_match else None
+
+def get_rating_series(db: Session, user_id: int, game: str, playtype: str, ladder: str, days: int = 365) -> list[RatingPointOut]:
+    day = func.date(Match.end_time).label("day")
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    rows = db.execute(
+        select(day, Match.player_display_after.label("rating"))
+        .where(
+            Match.user_id == user_id,
+            Match.game == game,
+            Match.playtype == playtype,
+            Match.ladder == ladder,
+            Match.type == MatchType.COMPETITIVE,
+            Match.player_display_after.is_not(None),
+            Match.end_time >= since
+        )
+        .distinct(day)
+        .order_by(day, Match.end_time.desc())
+    ).all()
+
+    return [RatingPointOut(date=r.day, rating=r.rating) for r in rows]
+
+def get_table_winrates(db: Session, user_id: int, game: str, playtype: str, ladder: str, limit: int = 5) -> list[TableWinrateOut]:
+    games = func.count().label("games")
+    wins = func.count().filter(Match.result == "win").label("wins")
+
+    rows = db.execute(
+        select(ChartTableLevel.table_icon, games, wins)
+        .join(Match, Match.chart_id == ChartTableLevel.chart_id)
+        .where(
+            Match.user_id == user_id,
+            Match.game == game,
+            Match.playtype == playtype,
+            Match.ladder == ladder,
+            Match.type == MatchType.COMPETITIVE,
+            Match.result.is_not(None)
+        )
+        .group_by(ChartTableLevel.table_icon)
+        .order_by(games.desc())
+        .limit(limit)
+    ).all()
+
+    return [TableWinrateOut(table_icon=r.table_icon, games=r.games, wins=r.wins) for r in rows]
+
+def get_latest_matches(db: Session, user_id: int, game: str, playtype: str, ladder: str, limit: int = 20) -> list[Match]:
+    latest_matches = db.scalars(
+        select(Match)
+        .where(
+            Match.user_id == user_id,
+            Match.game == game,
+            Match.playtype == playtype,
+            Match.ladder == ladder,
+            Match.type == MatchType.COMPETITIVE,
+            Match.status != MatchStatus.CANCELLED
+        )
+        .order_by(Match.end_time.desc())
+        .limit(limit)
+    ).all()
+
+    return latest_matches
+
+def get_activity(db: Session, user_id: int, game: str, playtype: str, ladder: str, days: int = 365) -> dict[str, int]:
+    day = func.date(Match.start_time).label("day")
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    rows = db.execute(
+        select(day, func.count())
+        .where(
+            Match.user_id == user_id,
+            Match.game == game,
+            Match.playtype == playtype,
+            Match.ladder == ladder,
+            Match.status != MatchStatus.CANCELLED,
+            Match.type == MatchType.COMPETITIVE,
+            Match.start_time >= since
+        )
+        .group_by(day)
+        .order_by(day)
+    ).all()
+
+    return {d.isoformat(): n for d, n in rows}
+
+def get_lamps(db: Session, user_id: int, game: str, playtype: str, ladder: str) -> dict[str, int]:
+    rows = db.execute(
+        select(MatchScore.lamp, func.count())
+        .join(Match, MatchScore.match_id == Match.id)
+        .where(
+            Match.user_id == user_id,
+            Match.game == game,
+            Match.playtype == playtype,
+            Match.ladder == ladder,
+            Match.type == MatchType.COMPETITIVE,
+            Match.status != MatchStatus.CANCELLED,
+            MatchScore.lamp != "FAILED"
+        )
+        .group_by(MatchScore.lamp)
+    ).all()
+
+    return {lamp: n for lamp, n in rows}

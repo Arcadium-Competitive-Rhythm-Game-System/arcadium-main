@@ -1,14 +1,30 @@
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select, func
 
 from app.api.dependencies import CurrentUser, DbSession
 from app.services.match import get_standing, get_active_match_by_userid, SEARCH_WINDOW_START
+from app.services.user import (
+    get_user_by_id, 
+    get_num_double_a, 
+    get_rank_on_ladder, 
+    get_last_played_on_ladder, 
+    get_rating_series, 
+    get_table_winrates,
+    get_latest_matches,
+    get_activity,
+    get_lamps
+    )
+from app.services.rating import get_player_rating, seed_player_rating
+from app.api.routes.users.responses import build_rating_out
+from app.core.errors import SeedPending
 from app.logic.ratings import ELO_FLOOR, find_rating_for_filter
 from app.models import ChartTableLevel, ChartRating
+from app.job.enqueue import enqueue_tachi_seed
 
 from app.schemas.match import MatchOut
-from app.schemas.chart import TableSearchOut
 from app.schemas.auth import UserRatingOut
+from app.schemas.user import UserProfileInfoOut, ProfileGenericOut, BMSProfileOut, LadderStatsOut
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -18,46 +34,41 @@ def get_user_ratings(db: DbSession, user: CurrentUser):
     results = []
     
     for rating in user.ratings:
-        rank, total, wins, losses = get_standing(db, rating, user.id)
 
-        results.append({
-            "game": rating.game,
-            "playtype": rating.playtype,
-            "ladder": rating.ladder,
-            "display_rating": rating.display_rating,
-            "placed": rating.placed,
-            "games_played": rating.games_played,
-            "selected_tables": rating.selected_tables,
-            "rank": rank,
-            "total": total,
-            "wins": wins,
-            "losses": losses
-        })
+        results.append(build_rating_out(db, rating, user.id))
 
     return results
 
 @router.get("/me/ratings/{game}/{playtype}/{ladder}", response_model=UserRatingOut)
 def get_user_rating_filtered(game: str, playtype: str, ladder: str, db: DbSession, user: CurrentUser):
+
+    if len(user.ratings) == 0:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No rating on this ladder yet!")
     
     for rating in user.ratings:
 
         if rating.game == game and rating.playtype == playtype and rating.ladder == ladder:
-            rank, total, wins, losses = get_standing(db, rating, user.id)
+            return build_rating_out(db, rating, user.id)
 
-            return {
-                "game": rating.game,
-                "playtype": rating.playtype,
-                "ladder": rating.ladder,
-                "display_rating": rating.display_rating,
-                "placed": rating.placed,
-                "games_played": rating.games_played,
-                "selected_tables": rating.selected_tables,
-                "rank": rank,
-                "total": total,
-                "wins": wins,
-                "losses": losses
-            }
+    raise HTTPException(status.HTTP_404_NOT_FOUND, "No rating on this ladder yet!")
 
+@router.post("/me/ratings/{game}/{playtype}/{ladder}", response_model=UserRatingOut)
+def set_up_user_rating(db: DbSession, user: CurrentUser, game: str, playtype: str, ladder: str, response: Response):
+
+    rating = get_player_rating(db, user.id, game, playtype, ladder)
+    if rating is not None:
+        return build_rating_out(db, rating, user.id)
+
+    seed_key = f"{game}:{playtype}:{ladder}"
+    
+    if seed_key not in user.rating_seeds:
+        enqueue_tachi_seed(db, user.id)
+        db.commit()
+        return JSONResponse(status_code=202, content={"message": "Your seed is being set up!"})
+    rating = seed_player_rating(db, user.id, game, playtype, ladder, user.rating_seeds[seed_key])
+    db.commit()
+    response.status_code = status.HTTP_201_CREATED
+    return build_rating_out(db, rating, user.id)
 
 
 @router.get("/me/can-queue")
@@ -102,3 +113,45 @@ def get_table_search_counts(db: DbSession, user: CurrentUser, game: str, playtyp
     rows = db.execute(search).all()
 
     return {r.table_icon: r.count for r in rows}
+
+@router.get("/profile/{id}/{game}/{playtype}/{ladder}", response_model=UserProfileInfoOut, status_code=200)
+def get_profile_info(db: DbSession, id: int, game: str, playtype: str, ladder: str):
+    user = get_user_by_id(db, id)
+
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User doesn't exist!")
+
+    player_rating = get_player_rating(db, user.id, game, playtype, ladder)
+
+    num_aa = 0
+
+    if game == "bms":
+        num_aa = get_num_double_a(db, user.id, playtype, ladder)
+
+    profile_generic = ProfileGenericOut(display_name=user.display_name, join_date=user.created_at)
+
+    if player_rating is None:
+        return UserProfileInfoOut(
+            generic=profile_generic,
+            ratings=user.ratings
+        )
+
+    rank, total = get_rank_on_ladder(db, player_rating)
+    last_played = get_last_played_on_ladder(db, user.id, game, playtype, ladder);
+    rating_series = get_rating_series(db, user.id, game, playtype, ladder)
+    table_winrate = get_table_winrates(db, user.id, game, playtype, ladder)
+    latest_matches = get_latest_matches(db, user.id, game, playtype, ladder)
+    activity = get_activity(db, user.id, game, playtype, ladder)
+    lamp_counts = get_lamps(db, user.id, game, playtype, ladder)
+
+    ladder_stats = LadderStatsOut(rating_series=rating_series, matches=latest_matches, activity=activity, lamp_counts=lamp_counts)
+
+    return UserProfileInfoOut(
+        generic=profile_generic,
+        ratings=user.ratings,
+        ladder_stats=ladder_stats,
+        rating_rank=rank,
+        rating_total=total,
+        last_played=last_played,
+        bms=BMSProfileOut(num_aa=num_aa, table_winrate=table_winrate)
+    )

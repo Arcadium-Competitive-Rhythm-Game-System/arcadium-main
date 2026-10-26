@@ -109,3 +109,52 @@ export interface MatchScore {
 }
 
 export type TableCounts = Record<string, number>;
+
+interface ProfileGeneric {
+    display_name: string;
+    join_date: string;
+}
+
+export interface ProfileRating {
+    game: string;
+    playtype: string;
+    ladder: string;
+    display_rating: number;
+    placed: boolean;
+    games_played: number;
+    wins: number;
+    peak_rating: number;
+}
+
+export interface TableWinrate {
+    table_icon: string;
+    games: number;
+    wins: number;
+}
+
+export interface RatingPoint {
+    date: string;
+    rating: number;
+}
+
+export interface LadderStats {
+    rating_series: RatingPoint[];
+    matches: Match[];
+    activity: Record<string, number>;
+    lamp_counts: Record<string, number>;
+}
+
+interface BMSProfile {
+    num_aa: number;
+    table_winrate: TableWinrate[]
+}
+
+export interface UserProfileInfo {
+    generic: ProfileGeneric
+    ratings: ProfileRating[]
+    ladder_stats?: LadderStats;
+    rating_rank?: number
+    rating_total?: number
+    last_played?: string | null;
+    bms?: BMSProfile
+}

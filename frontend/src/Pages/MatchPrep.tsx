@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { QueueIcon } from "../Components/Home/QueueCard";
 import type { Match, TableCounts, UserRating } from "../util/NetworkModels";
-import { api, toFixedTruncated } from "../util/helpers";
-import { useNavigate, useParams } from "react-router";
+import { api, ApiError, apiWithStatus, toFixedTruncated, waitForRating } from "../util/helpers";
+import { useLocation, useNavigate, useParams } from "react-router";
 import type { TableInfo } from "../util/MiscInterfaces";
 import { Button, Input, Radio, RadioGroup } from "@headlessui/react";
 import ForegroundCard from "../Components/General/ForegroundCard";
 import { Podium } from "lucide-react";
 import { playtype as playtypeCorrect, games, ladder as ladderCorrect } from "../util/dictionaryCorrections";
-import { useDebounce } from "../util/useDebounce";
+import { useDebounce } from "../hooks/useDebounce";
 import TableSection from "../Components/Match/TableSection";
 
 export default function MatchPrep() {
@@ -18,6 +18,7 @@ export default function MatchPrep() {
 
     const [rating, setRating] = useState<UserRating>()
     const [error, setError] = useState<string>();
+    const [settingUp, setSettingUp] = useState<boolean>(false);
 
     const [selected, setSelected] = useState<string[]>([])
     const [matchType, setMatchType] = useState<"competitive" | "casual">("competitive")
@@ -28,6 +29,7 @@ export default function MatchPrep() {
 
     const debouncedRating = useDebounce(targetRating, 400);
     const navigate = useNavigate();
+    const location = useLocation();
 
     function toggle(icon: string, on: boolean) {
         setSelected(prev => on ? [...prev, icon] : prev.filter(i => i !== icon))
@@ -72,21 +74,47 @@ export default function MatchPrep() {
     useEffect(() => {
         if (!user) return;
 
-        Promise.all([
-            api<UserRating>(`/users/me/ratings/${game}/${playtype}/${ladder}`),
-        ])
-        .then(([rating]) => {
-            setSelected(rating.selected_tables)
-            setRating(rating);
-            setTargetRating(rating.display_rating)
-        })
-        .catch(err => {
-            console.log(err.message)
-            setError(err.message)
-        })
-    }, [user])
+        let cancelled = false;
+        const url = `/users/me/ratings/${game}/${playtype}/${ladder}`;
+
+        async function load() {
+            try {
+                let rating: UserRating | null;
+                try {
+                    rating = await api<UserRating>(url);                       
+                } catch (err) {
+                    if (!(err instanceof ApiError && err.status === 404)) throw err;
+                    
+                    const { status, data } = await apiWithStatus<UserRating>(url, { method: "POST" });
+
+                    console.log(status, data)
+                    if (status === 202) {
+                        setSettingUp(true);                                      
+                        rating = await waitForRating(url, () => cancelled);      
+                    } else {
+                        rating = data;
+                    }
+                }
+                if (!cancelled && rating) {
+                    setRating(rating);
+                    setSettingUp(false);
+                }
+            } catch (err) {
+                if (!cancelled) setError(err instanceof Error ? err.message : "Something went wrong");
+            }
+        }
+
+        load();
+        return () => { cancelled = true; };
+    }, [user?.id, game, playtype, ladder])
 
     useEffect(() => {
+        if (!rating)
+            return;
+
+        if (!user)
+            return
+
         setTableCounts(undefined);
 
         if (matchType == "competitive") {
@@ -103,7 +131,7 @@ export default function MatchPrep() {
         }
 
         if (Number.isNaN(debouncedRating)) return;
-    }, [countsKey])
+    }, [countsKey, rating])
 
     const handleQueue = async () => {
         if (matchType == "competitive") 
@@ -154,7 +182,7 @@ export default function MatchPrep() {
 
 
     return (
-        <div className="flex-1 flex w-5/6 mx-auto lg:w-auto items-center justify-center mt-5">
+        <div key={location.pathname} className="flex-1 flex w-5/6 mx-auto lg:w-auto items-center justify-center mt-5">
             <div className="flex flex-col">
                 <div>
                     <p className="font-archivo text-subtext uppercase tracking-[0.2em]">{games[game]} {playtypeCorrect[playtype]} &middot; {ladderCorrect[ladder]}</p>
@@ -164,6 +192,7 @@ export default function MatchPrep() {
                 <div className="flex lg:flex-row flex-col w-full max-w-7xl lg:items-start gap-8 mt-5">
                     <ForegroundCard className="lg:w-72 w-full shrink-0">
                         <QueueIcon
+                        placed={rating.placed}
                         rating={rating.display_rating}
                         displayRating={true}
                         displayProgress={true}
