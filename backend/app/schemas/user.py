@@ -42,8 +42,8 @@ class BMSProfileOut(BaseModel):
 class UserProfileInfoOut(BaseModel):
     generic: ProfileGenericOut
     ratings: list[ProfilePlayerRatingOut]
-    ladder_stats: LadderStatsOut
-    rating_rank: int
-    rating_total: int
-    last_played: datetime | None
-    bms: BMSProfileOut | None
+    ladder_stats: LadderStatsOut | None = None
+    rating_rank: int | None = None
+    rating_total: int | None = None
+    last_played: datetime | None = None
+    bms: BMSProfileOut | None = None

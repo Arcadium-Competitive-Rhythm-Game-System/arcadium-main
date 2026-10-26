@@ -1,12 +1,16 @@
 import { Button, Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react"
 import type { ProfileRating, UserRating } from "../../util/NetworkModels"
 import { CornerDownRight } from "lucide-react"
+import { ladder } from "../../util/dictionaryCorrections"
+import { cn } from "../../util/helpers"
 
 interface ProfileGameTabsProps {
-    ratings: ProfileRating[]
+    ratings: ProfileRating[];
+    currentLadder: string;
+    setNewLadder: (value: string) => void;
 }
 
-export default function ProfileGameTabs({ ratings } : ProfileGameTabsProps) {
+export default function ProfileGameTabs({ ratings, currentLadder, setNewLadder } : ProfileGameTabsProps) {
     return (
         <TabGroup className="mt-2">
             <TabList>
@@ -18,8 +22,18 @@ export default function ProfileGameTabs({ ratings } : ProfileGameTabsProps) {
                     <CornerDownRight className="hidden lg:flex text-zinc-700"/>
                     <p className="hidden lg:flex font-archivo text-subtext tracking-[0.2em] text-sm">LADDER</p>
                     <div className="flex flex-row gap-2 bg-foreground p-2 rounded-md border-zinc-500/40 border">
-                        <Button className="font-archivo tracking-wide bg-highlight p-3 rounded-md">EASY CLEAR</Button>
-                        <Button className="font-archivo tracking-wide p-3 rounded-md hover:bg-zinc-500/50 cursor-pointer duration-150">HARD CLEAR</Button>
+                        {
+                            ratings.map(rating => {
+                                let selected = rating.ladder == currentLadder
+
+                                return (
+                                <Button 
+                                className={cn("font-archivo tracking-wide p-3 rounded-md uppercase", selected ? "bg-highlight" : "hover:bg-zinc-500/50 cursor-pointer")}
+                                onClick={!selected ? () => setNewLadder(rating.ladder) : () => {}}
+                                >{ladder[rating.ladder]}</Button>
+                                )
+                            })
+                        }
                     </div>
                 </TabPanel>
             </TabPanels>

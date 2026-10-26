@@ -152,9 +152,9 @@ interface BMSProfile {
 export interface UserProfileInfo {
     generic: ProfileGeneric
     ratings: ProfileRating[]
-    ladder_stats: LadderStats;
-    rating_rank: number
-    rating_total: number
-    last_played: string | null;
+    ladder_stats?: LadderStats;
+    rating_rank?: number
+    rating_total?: number
+    last_played?: string | null;
     bms?: BMSProfile
 }

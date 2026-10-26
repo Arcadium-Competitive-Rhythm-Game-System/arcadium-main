@@ -1,4 +1,4 @@
-import type { Job,  Match } from "./NetworkModels";
+import type { Job,  Match, UserRating } from "./NetworkModels";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -10,9 +10,32 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 
     if (!res.ok) {
         const body = await res.json().catch(() => null);
-        throw new Error(body?.detail ?? `Request failed: ${res.status}`);
+        throw new ApiError(res.status, body?.detail ?? `Request failed: ${res.status}`);
     }
     return res.status === 204 ? (undefined as T) : res.json();
+}
+
+export async function apiWithStatus<T>(path: string, options: RequestInit = {}) {
+    const res = await fetch(`/api${path}`, {
+        ...options,
+        headers: { "Content-Type": "application/json", ...options.headers },
+    });
+
+    if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new ApiError(res.status, body?.detail ?? `Request failed: ${res.status}`);
+    }
+    return { status: res.status, data: (await res.json()) as T }
+}
+
+export class ApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+    this.name = "ApiError";
+  }
 }
 
 const ROMAN = ["", "I", "II", "III", "IV", "V"];
@@ -123,4 +146,23 @@ export function timeAgo(iso: string): string {
   }
 
   return "just now"
+}
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
+
+export async function waitForRating(
+  url: string,
+  isCancelled: () => boolean,
+  { interval = 1500, maxAttempts = 40 } = {}
+) {
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const { status, data } = await apiWithStatus<UserRating>(url, { method: "POST" } );
+      if (status !== 202) return data;
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 404)) throw err;
+    }
+    await sleep(interval)
+  }
+  throw new Error("Rating setup is taking too long. Try refreshing")
 }

@@ -19,6 +19,7 @@ export default function ProfileTierCard({ className, rating, rank, total, lastPl
         <div className={cn("w-full", className)}>
             <ForegroundCard>
                 <QueueIcon 
+                placed={rating.placed}
                 rating={rating.display_rating}
                 displayProgress={true}
                 displayRating={true}

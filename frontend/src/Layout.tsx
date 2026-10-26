@@ -52,14 +52,20 @@ export default function Layout() {
 
                 <DisclosurePanel transition className="flex flex-col transition ease-out data-closed:opacity-0 data-closed:-translate-y-2">
                     <Disclosure>
-                        <DisclosureButton className="group focus:outline-none flex items-center gap-2 hover:text-highlight transition-colors duration-150 py-2">
-                        Queue <ChevronDown className="size-6 scale-x-90 group-data-open:rotate-180 transition-transform duration-200" />
-                        </DisclosureButton>
+                        {
+                            canQueue.can_queue ?
+                            <>
+                                <DisclosureButton className="group focus:outline-none flex items-center gap-2 hover:text-highlight transition-colors duration-150 py-2">
+                                Queue <ChevronDown className="size-6 scale-x-90 group-data-open:rotate-180 transition-transform duration-200" />
+                                </DisclosureButton>
 
-                        <DisclosurePanel className="flex flex-col pl-4 py-1">
-                                <Link to="/prep/bms/7k/ec" className="block duration-150 py-2">7K Easy Clear</Link>
-                                <Link to="/prep/bms/7k/hc" className="block duration-150 py-2">7K Hard Clear</Link>
-                        </DisclosurePanel>
+                                <DisclosurePanel className="flex flex-col pl-4 py-1">
+                                        <Link to="/prep/bms/7k/ec" className="block duration-150 py-2">7K Easy Clear</Link>
+                                        <Link to="/prep/bms/7k/hc" className="block duration-150 py-2">7K Hard Clear</Link>
+                                </DisclosurePanel>
+                            </> : <></>
+
+                        }
                     </Disclosure>
 
                     <Disclosure>
