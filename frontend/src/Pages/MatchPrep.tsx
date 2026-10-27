@@ -97,6 +97,8 @@ export default function MatchPrep() {
                 }
                 if (!cancelled && rating) {
                     setRating(rating);
+                    setSelected(rating.selected_tables)
+                    setTargetRating(rating.display_rating)
                     setSettingUp(false);
                 }
             } catch (err) {
