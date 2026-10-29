@@ -5,6 +5,7 @@ import type { User } from "../util/NetworkModels";
 type AuthState = {
     user: User | null;
     loading: boolean;
+    setUser: (user: User) => void;
     refresh: () => Promise<void>;
     logout: () => Promise<void>;
     login: (identifier: string, password: string) => Promise<void>;
@@ -53,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ user, loading, refresh, logout, login, register}}>
+        <AuthContext.Provider value={{ user, loading, refresh, logout, login, register, setUser}}>
             {children}
         </AuthContext.Provider>
     )

@@ -1,5 +1,6 @@
 import re
 import unicodedata
+from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr, field_validator, model_validator, StringConstraints
 from typing import Annotated
 
@@ -58,5 +59,7 @@ class UserOut(BaseModel):
     display_name: str
     username: str
     avatar_url: str | None
+    has_tachi_key: bool = False
+    onboarded_at: datetime | None
 
     model_config = {"from_attributes": True}

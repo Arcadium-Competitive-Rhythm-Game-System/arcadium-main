@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
 
 from app.api.dependencies import CurrentUser, DbSession
 from app.services.match import get_standing, get_active_match_by_userid, SEARCH_WINDOW_START
@@ -65,8 +66,13 @@ def set_up_user_rating(db: DbSession, user: CurrentUser, game: str, playtype: st
         enqueue_tachi_seed(db, user.id)
         db.commit()
         return JSONResponse(status_code=202, content={"message": "Your seed is being set up!"})
-    rating = seed_player_rating(db, user.id, game, playtype, ladder, user.rating_seeds[seed_key])
-    db.commit()
+
+    try:
+        rating = seed_player_rating(db, user.id, game, playtype, ladder, user.rating_seeds[seed_key])
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        rating = get_player_rating(db, user.id, game, playtype, ladder)
     response.status_code = status.HTTP_201_CREATED
     return build_rating_out(db, rating, user.id)
 

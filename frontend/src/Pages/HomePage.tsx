@@ -1,4 +1,4 @@
-import QueueDashboard from "./Components/Home/QueueDashboard";
+import QueueDashboard from "../Components/Home/QueueDashboard";
 
 export default function HomePage() {
 

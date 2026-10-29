@@ -28,6 +28,9 @@ def enqueue_job(db: Session, user_id: int, job_type: str, payload: dict | None =
 
 # For specific jobs that need to be enqueued without an endpoint
 
+def enqueue_tachi_check(db, user_id: int, tachi_key: str) -> Job:
+    return enqueue_job(db, user_id, "tachi_key_valid", {"key": tachi_key})
+
 def enqueue_tachi_seed(db, user_id: int) -> Job:
     return enqueue_job(db, user_id, "tachi_seed_profile", {"playtype": "7k"})
 
