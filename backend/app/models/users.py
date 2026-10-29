@@ -28,6 +28,7 @@ class User(Base):
     avatar_url: Mapped[str | None]
     is_active: Mapped[bool] = mapped_column(default=True)
     rating_seeds: Mapped[dict] = mapped_column(JSONB, server_default="{}")
+    onboarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

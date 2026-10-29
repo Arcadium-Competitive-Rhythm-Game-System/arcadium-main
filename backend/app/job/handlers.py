@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models import User, Match
 from app.core.enums import ClearTypes, MatchStatus
+from app.services.tachi import TachiError
 from app.services.tachi import tachi_get
 from app.services.match import cancel_stale_matches
 from app.ratings import sieg_to_elo
@@ -73,6 +74,13 @@ def tachi_rating(db, job):
 
     return data["gameStats"]["ratings"]
 
+def tachi_key_valid(db, job):
+    tachi_key = job.payload.get("key", None)
+
+    profile = tachi_get(f"/users/me", tachi_key)
+
+    return profile
+
 def tachi_seed_profile(db, job):
     user = db.get(User, job.user_id)
 
@@ -134,5 +142,6 @@ HANDLERS = {
     "match_end_check": match_end_check,
     "match_pre_submission": match_pre_submission,
     "match_forfeit": match_forfeit,
-    "match_cleanup": match_cleanup
+    "match_cleanup": match_cleanup,
+    "tachi_key_valid": tachi_key_valid
 }

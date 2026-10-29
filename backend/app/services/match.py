@@ -170,7 +170,7 @@ def apply_rating_update(db: Session, match: Match, won: bool):
     chart.volatility = chart_new.volatility
     chart.games_played += 1
 
-    if player.games_played >= 4:
+    if player.games_played >= 5:
         player.placed = True
 
     match.player_display_after = player.display_rating

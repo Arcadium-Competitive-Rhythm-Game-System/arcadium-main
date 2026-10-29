@@ -7,16 +7,18 @@ import "@fontsource/archivo-black"
 import "@fontsource-variable/jetbrains-mono"
 
 import "./index.css"
-import HomePage from './HomePage.tsx'
+import HomePage from './Pages/HomePage.tsx'
 import Layout from './Layout.tsx'
 import { AuthProvider } from './hooks/useAuth.tsx'
 import Login from './Pages/Login.tsx'
 import RequireAuth from './Components/General/RequireAuth.tsx'
+import { RequireOnboarded } from './Components/General/RequireOnboarded.tsx'
 import Register from './Pages/Register.tsx'
 import MatchPrep from './Pages/MatchPrep.tsx'
 import MatchPage from './Pages/MatchPage.tsx'
 import { TierProvider } from './hooks/useTiers.tsx'
 import ProfilePage from './Pages/ProfilePage.tsx'
+import OnboardingPage from './Pages/OnboardingPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -26,16 +28,25 @@ const router = createBrowserRouter([
     path: "/register", element: <Register />
   },
   {
-    path: "/",
-    element: <Layout />,
+    element: <RequireAuth/>,
     children: [
       {
-        element: <RequireAuth />,
+        path: "/onboarding", 
+        element: <OnboardingPage />
+      },
+      {
+        element: <RequireOnboarded />,
         children: [
-          { index: true, element: <HomePage />},
-          { path: "prep/:game/:playtype/:ladder", element: <MatchPrep />},
-          { path: "match/:id", element: <MatchPage />},
-          { path: "/profile/:id", element: <ProfilePage /> }
+          {
+            path: "/",
+            element: <Layout />,
+            children: [
+              { index: true, element: <HomePage />},
+              { path: "prep/:game/:playtype/:ladder", element: <MatchPrep />},
+              { path: "match/:id", element: <MatchPage />},
+              { path: "/profile/:id", element: <ProfilePage /> }
+            ]
+          }
         ]
       }
 
