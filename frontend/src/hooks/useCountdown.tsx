@@ -12,7 +12,7 @@ export function useCountdown(cutoff: string | undefined, startTime: string | und
 
     const msLeft = end === null ? 0 : Math.max(0, end - now);
 
-    const skipEnd = start !== null ? start + 30_000 : null;
+    const skipEnd = start !== null ? start + 120_000 : null;
     const skipMsLeft = skipEnd !== null ? Math.max(0, skipEnd - now) : 0;
     const skipFinished = skipEnd === null || now >= skipEnd;
 

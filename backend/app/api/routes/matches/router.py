@@ -102,7 +102,7 @@ def skip_active_match(db: DbSession, user: CurrentUser):
     if active_match is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No active match!")
 
-    skip_limit_time = active_match.start_time + timedelta(minutes=0.5)
+    skip_limit_time = active_match.start_time + timedelta(minutes=2)
 
     if datetime.now(UTC) > skip_limit_time:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not within the allotted time to skip match!")
