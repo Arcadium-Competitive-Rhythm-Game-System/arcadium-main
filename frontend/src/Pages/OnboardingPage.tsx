@@ -11,6 +11,9 @@ import BokutachiKey from "../Components/General/BokutachiKey";
 import { useAuth } from "../hooks/useAuth";
 import { api } from "../util/helpers";
 import type { User } from "../util/NetworkModels";
+import QuickSetup from "./QuickSetup";
+import GettingSongs from "../Components/General/GettingSongs";
+import MatchTables from "../Components/General/MatchTables";
 
 export default function OnboardingPage() {
 
@@ -96,68 +99,26 @@ export default function OnboardingPage() {
         }
         else if (phase === 1) {
             return (
-                <div className="font-sanchez lg:w-3/4 mx-auto mt-10 flex flex-col">
-                    Arcadium uses the same difficulty tables that Bokutachi uses. If you already have a table or more full of songs, you can skip this section.
-
-                    <ForegroundCard className="mt-2">
-                        <p className="text-subtext">This section is a work-in-progress... it will be fleshed out at a later date.</p>
-                    </ForegroundCard>
-
-                    <p>Arcadium expects you to have a sizeable collection, or at least one or two solid tables filled. Below are the recommended tables to get set up with. You only need one or two of these to play properly.</p>
-                    
-                    <ul className="mt-5">
-                        <li className="text-subtext">- Normal 
-                            [
-                                <a href="https://makiba.ac/tables/bms-7k/normal" target="_blank" className="text-highlight">Makiba</a> | 
-                                <a href="https://darksabun.club/table/archive/normal1/" target="_blank" className="text-highlight"> DARK SABUN</a>
-                            ]
-                        </li>
-                        <li className="text-subtext">- Normal2 
-                            [
-                                <a href="https://makiba.ac/tables/bms-7k/normal2" target="_blank" className="text-highlight">Makiba</a> | 
-                                <a href="http://rattoto10.jounin.jp/table.html" target="_blank" className="text-highlight"> NEW GENERATION</a>
-                            ]
-                        </li>
-                        <li className="text-subtext">- Insane</li>
-                        <li className="text-subtext">- Insane2</li>
-                        <li className="text-subtext">- Stardust</li>
-                        <li className="text-subtext">- Starlight</li>
-                        <li className="text-subtext">- Satellite</li>
-                        <li className="text-subtext">- Overjoy</li>
-                        <li className="text-subtext">- Stella</li>
-                    </ul>
-
-                    <ForegroundCard className="mt-4">
-                        <p className="text-subtext">Note: If some songs are hard to find, you can choose to <i>skip</i> that song in a match, which will prevent you from getting it again. You only get the first thirty seconds to do this.</p>
-                    </ForegroundCard>
+                <div className="lg:w-3/4 mx-auto mt-10 flex flex-col">
+                    <GettingSongs />
 
                     <Button
-                    onClick={() => setPhase(2)}
-                    className="self-end relative font-sanchez flex items-center gap-2 bg-highlight brightness-80 enabled:hover:brightness-100 duration-200 cursor-pointer p-3 rounded-sm font-bold mt-3
+                    onClick={() => setPhase(phase+1)}
+                    className="self-end relative font-sanchez flex items-center gap-2 bg-highlight brightness-80 enabled:hover:brightness-100 duration-200 cursor-pointer p-3 rounded-sm font-bold mt-5
                                 "
                     >
                     Next
-                    </Button>
-                    
+                    </Button>             
                 </div>
+
+
             )
         } else if (phase === 2) {
             return (
                 <div className="font-sanchez lg:w-3/4 mx-auto mt-10 flex flex-col">
-                    <p>Arcadium offers match tables that you can apply to your client. This way, chosen charts come up immediately to your game upon refreshing</p>
-
-                    <p className="font-archivo text-subtext tracking-[0.2em] mt-3">Match Table</p>
-                    <p className="font-mono">https://arcadium.com/api/match/{user?.id ?? "NA"}/table</p>
-
-                    <p className="mt-3">Upon adding this to your game, you should see a "User has no active match". Once you start a match, ensure you're over the parent "table" folder, and press your table refresh button.</p>
-
-                    <ul>
-                        <li className="font-mono">- F8 on LR2 / openLR2</li>
-                        <li className="font-mono">- F2 on beatoraja / LR2oraja</li>
-                    </ul>
-                    
-                    <p className="mt-3">Then enter the table and you should see the song update.</p>
-
+                    <MatchTables 
+                    user={user}
+                    />
                     <Button
                     onClick={finishOnboarding}
                     className="self-end relative font-sanchez flex items-center gap-2 bg-highlight brightness-80 enabled:hover:brightness-100 duration-200 cursor-pointer p-3 rounded-sm font-bold mt-3
