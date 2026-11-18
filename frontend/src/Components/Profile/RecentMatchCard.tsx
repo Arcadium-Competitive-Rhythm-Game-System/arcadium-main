@@ -13,6 +13,15 @@ export default function RecentMatchCard({ className, match }: RecentMatchCardPro
     ? Math.round(match.player_display_after - match.player_display_before)
     : null;
 
+    const badges = match.chart.table_levels.map(table => (
+        <p
+            key={`${table.table_icon}${table.table_level}`}
+            className="border border-zinc-400/50 px-2 py-1 rounded-xl font-sanchez text-xs sm:text-sm sm:p-2"
+        >
+            {table.table_icon}{table.table_level}
+        </p>
+    ));
+
     return (
         <div className={cn("flex flex-row gap-4 items-center", className)}>
             <span
@@ -29,11 +38,10 @@ export default function RecentMatchCard({ className, match }: RecentMatchCardPro
             <div className="flex-1 flex-col">
                 <p className="font-sanchez">[{match.chart.title}]</p>
                 <p className="font-sanchez text-sm text-subtext">{match.score?.lamp ?? "NO PLAY"} &middot; {timeAgo(match.end_time ?? "0")}</p>
+                <div className="flex gap-1.5 mt-1.5 sm:hidden">{badges}</div>
             </div>
 
-            {match.chart.table_levels.map(table => (
-                <p className="border border-zinc-400/50 p-2 rounded-xl font-sanchez text-sm">{table.table_icon}{table.table_level}</p>
-            ))}
+            <div className="hidden sm:flex gap-2 shrink-0">{badges}</div>
             
             {delta !== null && (
             <p className={`font-mono ${delta >= 0 ? "text-green-400" : "text-red-400"}`}>
