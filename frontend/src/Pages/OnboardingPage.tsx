@@ -8,12 +8,11 @@ import CreateNewAPIKey from "../assets/onboarding_assets/tachi_create_key.png";
 import CreateAPIKey from "../assets/onboarding_assets/tachi_create_key_2.png";
 import MyIntegrations from "../assets/onboarding_assets/tachi_my_integrations.png";
 import BokutachiKey from "../Components/General/BokutachiKey";
+import GettingSongs from "../Components/General/GettingSongs";
+import MatchTables from "../Components/General/MatchTables";
 import { useAuth } from "../hooks/useAuth";
 import { api } from "../util/helpers";
 import type { User } from "../util/NetworkModels";
-import QuickSetup from "./QuickSetup";
-import GettingSongs from "../Components/General/GettingSongs";
-import MatchTables from "../Components/General/MatchTables";
 
 export default function OnboardingPage() {
 

@@ -1,6 +1,6 @@
-import { Button, Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
-import ForegroundCard from "./ForegroundCard";
+import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import { ChevronDown } from "lucide-react";
+import ForegroundCard from "./ForegroundCard";
 
 export default function GettingSongs() {
     return (
