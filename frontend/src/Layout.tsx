@@ -86,7 +86,7 @@ export default function Layout() {
                         </DisclosurePanel>
                     </Disclosure>
                 <Link className="hover:text-highlight duration-150 py-2" to="/">Tier Guide</Link>
-                <Link className="hover:text-highlight duration-150 py-2" to="/">Quick Setup</Link>
+                <Link className="hover:text-highlight duration-150 py-2" to="/quick-setup">Quick Setup</Link>
                 <Link className="hover:text-highlight duration-150 py-2" to="/">FAQ</Link>
                 <div className="flex justify-end bg-zinc-50/20 rounded-md my-2">
                     <UserButton />
@@ -150,7 +150,7 @@ export default function Layout() {
                     </MenuItems>
                 </Menu>
                 <Link className="hover:text-highlight duration-150" to="/">Tier Guide</Link>
-                <Link className="hover:text-highlight duration-150" to="/">Quick Setup</Link>
+                <Link className="hover:text-highlight duration-150" to="/quick-setup">Quick Setup</Link>
                 <Link className="hover:text-highlight duration-150" to="/">FAQ</Link>
                 <div>
                     <UserButton />
